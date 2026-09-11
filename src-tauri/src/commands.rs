@@ -7,8 +7,7 @@ use crate::engine::batch::run_batch;
 use crate::engine::types::{BatchConfig, ScannedImage};
 
 const SUPPORTED_EXTENSIONS: &[&str] = &[
-    "jpg", "jpeg", "png", "webp", "avif", "heic", "heif", "svg", "bmp", "tiff", "tif", "gif",
-    "ico",
+    "jpg", "jpeg", "png", "webp", "avif", "heic", "heif", "svg", "bmp", "tiff", "tif", "gif", "ico",
 ];
 
 fn is_supported_image(ext: &str) -> bool {
@@ -214,4 +213,3 @@ mod tests {
         assert!(open_folder(r"Z:\non_existent_drive_987654\folder".to_string()).is_err());
     }
 }
-

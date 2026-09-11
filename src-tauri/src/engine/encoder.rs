@@ -1,8 +1,8 @@
-use std::io::Cursor;
+use crate::engine::transform::flatten_alpha_to_white;
 use image::codecs::jpeg::JpegEncoder;
 use image::codecs::png::{CompressionType, FilterType as PngFilterType, PngEncoder};
 use image::{DynamicImage, ImageEncoder};
-use crate::engine::transform::flatten_alpha_to_white;
+use std::io::Cursor;
 
 pub enum OutputFormat {
     Jpg,
@@ -47,12 +47,7 @@ pub fn encode_image(
             let mut buf = Vec::with_capacity((w * h / 2) as usize);
             let encoder = JpegEncoder::new_with_quality(&mut buf, q);
             encoder
-                .write_image(
-                    rgb.as_raw(),
-                    w,
-                    h,
-                    image::ExtendedColorType::Rgb8,
-                )
+                .write_image(rgb.as_raw(), w, h, image::ExtendedColorType::Rgb8)
                 .map_err(|e| format!("JPEG encoding failed: {}", e))?;
             Ok(buf)
         }
@@ -67,12 +62,7 @@ pub fn encode_image(
                 PngFilterType::Adaptive,
             );
             encoder
-                .write_image(
-                    rgba.as_raw(),
-                    w,
-                    h,
-                    image::ExtendedColorType::Rgba8,
-                )
+                .write_image(rgba.as_raw(), w, h, image::ExtendedColorType::Rgba8)
                 .map_err(|e| format!("PNG encoding failed: {}", e))?;
             Ok(buf)
         }
@@ -96,9 +86,7 @@ pub fn encode_image(
             let pixels: &[rgb::RGBA8] = bytemuck::cast_slice(raw);
             let img_ref = ravif::Img::new(pixels, w as usize, h as usize);
 
-            let enc = ravif::Encoder::new()
-                .with_quality(q as f32)
-                .with_speed(8);
+            let enc = ravif::Encoder::new().with_quality(q as f32).with_speed(8);
 
             let res = enc
                 .encode_rgba(img_ref)

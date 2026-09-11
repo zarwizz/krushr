@@ -1,9 +1,9 @@
+use rayon::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use rayon::prelude::*;
 use tauri::{AppHandle, Emitter};
 
 use crate::engine::decoder::decode_image_file;
@@ -51,9 +51,7 @@ pub fn run_batch(app: AppHandle, config: BatchConfig) {
             let file_path = Path::new(file_path_str);
             let file_id = file_path_str.clone();
 
-            let orig_size = fs::metadata(file_path)
-                .map(|m| m.len())
-                .unwrap_or(0);
+            let orig_size = fs::metadata(file_path).map(|m| m.len()).unwrap_or(0);
 
             // Notify UI: processing started
             let current_idx = processed_counter.fetch_add(1, Ordering::Relaxed);
@@ -218,7 +216,8 @@ fn process_single_image(
             if suffixed_path.exists() && suffixed_path != input_path {
                 let mut counter = 1;
                 loop {
-                    let numbered_path = dest_dir.join(format!("{}{}_{}.{}", file_stem, suffix, counter, ext));
+                    let numbered_path =
+                        dest_dir.join(format!("{}{}_{}.{}", file_stem, suffix, counter, ext));
                     if !numbered_path.exists() {
                         break numbered_path;
                     }
@@ -233,8 +232,13 @@ fn process_single_image(
     };
 
     // 6. Write to disk
-    fs::write(&output_file_path, &final_bytes)
-        .map_err(|e| format!("Failed to write output file {}: {}", output_file_path.display(), e))?;
+    fs::write(&output_file_path, &final_bytes).map_err(|e| {
+        format!(
+            "Failed to write output file {}: {}",
+            output_file_path.display(),
+            e
+        )
+    })?;
 
     let file_size = final_bytes.len() as u64;
     let (out_w, out_h) = (resized_img.width(), resized_img.height());
@@ -283,4 +287,3 @@ mod tests {
         let _ = fs::remove_dir_all(temp_dir);
     }
 }
-

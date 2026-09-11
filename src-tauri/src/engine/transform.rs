@@ -32,11 +32,7 @@ pub enum ResizeConfig {
     },
 }
 
-pub fn calculate_target_dimensions(
-    orig_w: u32,
-    orig_h: u32,
-    mode: &ResizeConfig,
-) -> (u32, u32) {
+pub fn calculate_target_dimensions(orig_w: u32, orig_h: u32, mode: &ResizeConfig) -> (u32, u32) {
     if orig_w == 0 || orig_h == 0 {
         return (orig_w.max(1), orig_h.max(1));
     }
@@ -96,11 +92,7 @@ pub fn calculate_target_dimensions(
     }
 }
 
-pub fn resize_image(
-    img: &DynamicImage,
-    target_w: u32,
-    target_h: u32,
-) -> DynamicImage {
+pub fn resize_image(img: &DynamicImage, target_w: u32, target_h: u32) -> DynamicImage {
     let (orig_w, orig_h) = img.dimensions();
     if orig_w == target_w && orig_h == target_h {
         return img.clone();
@@ -160,8 +152,16 @@ pub fn apply_resize(img: &DynamicImage, mode: &ResizeConfig) -> DynamicImage {
                     if scaled_w == box_w && scaled_h == box_h {
                         scaled_img
                     } else {
-                        let crop_x = if scaled_w > box_w { (scaled_w - box_w) / 2 } else { 0 };
-                        let crop_y = if scaled_h > box_h { (scaled_h - box_h) / 2 } else { 0 };
+                        let crop_x = if scaled_w > box_w {
+                            (scaled_w - box_w) / 2
+                        } else {
+                            0
+                        };
+                        let crop_y = if scaled_h > box_h {
+                            (scaled_h - box_h) / 2
+                        } else {
+                            0
+                        };
                         scaled_img.crop_imm(crop_x, crop_y, box_w, box_h)
                     }
                 }

@@ -1,5 +1,5 @@
-use image::DynamicImage;
 use crate::engine::encoder::{encode_image, OutputFormat};
+use image::DynamicImage;
 
 pub struct OptimizationResult {
     pub data: Vec<u8>,

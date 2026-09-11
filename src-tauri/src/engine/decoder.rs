@@ -1,7 +1,7 @@
+use image::{DynamicImage, GenericImageView, ImageReader, RgbaImage};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use image::{DynamicImage, GenericImageView, ImageReader, RgbaImage};
 
 pub struct DecodedImage {
     pub image: DynamicImage,
@@ -175,7 +175,9 @@ mod tests {
         // Verify conversion to JPEG with alpha flattening
         let out_jpg = std::env::temp_dir().join("shrinkr_heic_decode_test.jpg");
         let rgb_img = crate::engine::transform::flatten_alpha_to_white(&decoded.image);
-        rgb_img.save_with_format(&out_jpg, image::ImageFormat::Jpeg).expect("save jpeg");
+        rgb_img
+            .save_with_format(&out_jpg, image::ImageFormat::Jpeg)
+            .expect("save jpeg");
         assert!(out_jpg.exists());
         let meta = std::fs::metadata(&out_jpg).expect("metadata");
         assert!(meta.len() > 1000);
