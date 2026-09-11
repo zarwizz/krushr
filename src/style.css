@@ -1,0 +1,262 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  input, textarea {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  body {
+    @apply bg-[#0c0d10] text-[#f5f5f7] font-sans antialiased overflow-hidden selection:bg-blue-500 selection:text-white;
+  }
+
+  /* Custom Windows 11 dark scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Window drag region */
+.titlebar-drag {
+  app-region: drag;
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  app-region: no-drag;
+  -webkit-app-region: no-drag;
+}
+
+/* Windows 11 Window Controls */
+.win-caption-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 100%;
+  color: #a1a1a6;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.win-caption-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.win-caption-btn:active {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.win-caption-btn-close:hover {
+  background-color: #c42b1c !important;
+  color: #ffffff !important;
+}
+
+.win-caption-btn-close:active {
+  background-color: #b02619 !important;
+}
+
+/* Glass card styling */
+.apple-card {
+  background: rgba(22, 23, 28, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.apple-card-hover {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-card-hover:hover {
+  background: rgba(30, 31, 38, 0.85);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Segmented Pill Controls */
+.pill-group {
+  background: rgba(16, 17, 21, 0.85);
+  padding: 3px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+}
+
+.pill-item {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #a1a1a6;
+  transition: all 0.15s ease;
+}
+
+.pill-item:hover {
+  color: #ffffff;
+}
+
+.pill-item.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Input slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  height: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+/* Switch toggle */
+.apple-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.apple-toggle.active {
+  background: #0078d4;
+}
+
+.apple-toggle-dot {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-toggle.active .apple-toggle-dot {
+  transform: translateX(16px);
+}
+
+/* Accordion component styles */
+.accordion-section {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.accordion-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.accordion-section.collapsed .accordion-chevron {
+  transform: rotate(-90deg);
+}
+
+.accordion-section.collapsed .accordion-body {
+  display: none !important;
+}
+
+/* Ratio Lock Toggle */
+.ratio-lock-btn {
+  transition: all 0.15s ease;
+}
+
+.ratio-lock-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.ratio-lock-btn:not(.active) {
+  background: rgba(255, 255, 255, 0.04);
+  color: #71717a;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Ratio Reset Button */
+.ratio-reset-btn {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #a1a1aa;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.ratio-reset-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.ratio-reset-btn:active {
+  transform: scale(0.92);
+}
+
+.ratio-reset-btn:active svg {
+  transform: rotate(-120deg);
+  transition: transform 0.25s ease;
+}
+
+/* Quick Action Presets Mini-Cards & Scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.preset-card {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.preset-card:hover {
+  transform: translateY(-1px);
+}
+
+.preset-card:active {
+  transform: scale(0.97);
+}
+
+
+

@@ -1,0 +1,15 @@
+# Dépendances Node & Build Frontend
+node_modules/
+dist/
+.vite/
+
+# Compilation Rust (lourd)
+/src-tauri/target/
+Cargo.lock
+
+# Fichiers OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
