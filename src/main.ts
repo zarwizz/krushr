@@ -200,6 +200,74 @@ let isMaximized = false;
 let userPresets: Preset[] = [];
 let activePresetId: string | null = null;
 
+// App Settings State & Storage
+export interface AppSettings {
+  lang: Language;
+  theme: "dark" | "light" | "system";
+  stripExif: boolean;
+  defaultSuffix: string;
+}
+
+const SETTINGS_STORAGE_KEY = "shrinkr_settings";
+
+const defaultSettings: AppSettings = {
+  lang: "fr",
+  theme: "dark",
+  stripExif: true,
+  defaultSuffix: "_min",
+};
+
+let appSettings: AppSettings = { ...defaultSettings };
+
+function loadAppSettings(): AppSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        lang: parsed.lang === "en" || parsed.lang === "fr" ? parsed.lang : defaultSettings.lang,
+        theme: parsed.theme === "light" || parsed.theme === "system" ? parsed.theme : "dark",
+        stripExif: typeof parsed.stripExif === "boolean" ? parsed.stripExif : defaultSettings.stripExif,
+        defaultSuffix: typeof parsed.defaultSuffix === "string" ? parsed.defaultSuffix : defaultSettings.defaultSuffix,
+      };
+    }
+  } catch (e) {
+    console.warn("Failed to load settings:", e);
+  }
+  return { ...defaultSettings };
+}
+
+function saveAppSettings() {
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(appSettings));
+  } catch (e) {
+    console.warn("Failed to save settings:", e);
+  }
+}
+
+function applyTheme(theme: "dark" | "light" | "system") {
+  appSettings.theme = theme;
+  document.documentElement.setAttribute("data-theme", theme);
+}
+
+function updateSettingsUI() {
+  if (langFrBtn) langFrBtn.classList.toggle("active", currentLang === "fr");
+  if (langEnBtn) langEnBtn.classList.toggle("active", currentLang === "en");
+
+  themePills?.querySelectorAll("[data-theme]").forEach(pill => {
+    pill.classList.toggle("active", (pill as HTMLElement).dataset.theme === appSettings.theme);
+  });
+
+  if (toggleStripExif) {
+    toggleStripExif.classList.toggle("active", appSettings.stripExif);
+    toggleStripExif.setAttribute("aria-checked", appSettings.stripExif.toString());
+  }
+
+  if (inputSettingsDefaultSuffix) {
+    inputSettingsDefaultSuffix.value = appSettings.defaultSuffix;
+  }
+}
+
 // Selected Settings: Format & Quality
 let selectedFormat = "jpg";
 let qualityVal = 82;
@@ -262,8 +330,10 @@ const btnMinimize = (document.getElementById("btn-minimize") || document.getElem
 const btnMaximize = (document.getElementById("btn-maximize") || document.getElementById("btn-win-maximize")) as HTMLButtonElement | null;
 const btnClose = (document.getElementById("btn-close") || document.getElementById("btn-win-close")) as HTMLButtonElement | null;
 
-const langEnBtn = document.getElementById("lang-en")!;
-const langFrBtn = document.getElementById("lang-fr")!;
+const langEnBtn = (document.getElementById("lang-btn-en") || document.getElementById("lang-en")) as HTMLButtonElement | null;
+const langFrBtn = (document.getElementById("lang-btn-fr") || document.getElementById("lang-fr")) as HTMLButtonElement | null;
+const btnOpenSettings = document.getElementById("btn-open-settings");
+const iconSettings = document.getElementById("icon-settings");
 
 // DOM Elements: Adaptive Drop Zone
 const dropZoneHero = document.getElementById("drop-zone-hero")!;
@@ -287,10 +357,17 @@ const btnCompactBrowseFolder = document.getElementById("btn-compact-browse-folde
 const iconCompactFolder = document.getElementById("icon-compact-folder")!;
 const labelCompactBrowseFolder = document.getElementById("label-compact-browse-folder")!;
 
-// DOM Elements: Presets Chips Bar & Modal
-const presetChipsList = document.getElementById("presets-chips-list")!;
-const btnPresetChipAdd = document.getElementById("btn-preset-chip-add")!;
-const labelPresetChipAdd = document.getElementById("label-preset-chip-add")!;
+// DOM Elements: Presets Sidebar Block & Modal
+const iconPresetHeader = document.getElementById("icon-preset-header");
+const labelPresetHeader = document.getElementById("label-preset-header")!;
+const btnPresetDelete = document.getElementById("btn-preset-delete") as HTMLButtonElement | null;
+const iconPresetDelete = document.getElementById("icon-preset-delete");
+const btnPresetAdd = document.getElementById("btn-preset-add") as HTMLButtonElement | null;
+const iconPresetAdd = document.getElementById("icon-preset-add");
+const labelPresetAdd = document.getElementById("label-preset-add")!;
+const presetSelect = document.getElementById("preset-select") as HTMLSelectElement | null;
+const iconPresetSelectChevron = document.getElementById("icon-preset-select-chevron");
+const brandLogo = document.getElementById("brand-logo");
 
 const modalSavePreset = document.getElementById("modal-save-preset")!;
 const titleModalPreset = document.getElementById("title-modal-preset")!;
@@ -301,6 +378,27 @@ const previewPresetSuffix = document.getElementById("preview-preset-suffix");
 const btnClosePresetModal = document.getElementById("btn-close-preset-modal")!;
 const btnCancelPresetSave = document.getElementById("btn-cancel-preset-save")!;
 const btnConfirmPresetSave = document.getElementById("btn-confirm-preset-save")!;
+
+// DOM Elements: Settings Modal
+const modalSettings = document.getElementById("modal-settings");
+const iconModalSettings = document.getElementById("icon-modal-settings");
+const titleModalSettings = document.getElementById("title-modal-settings");
+const btnCloseSettingsModal = document.getElementById("btn-close-settings-modal");
+const btnDoneSettings = document.getElementById("btn-done-settings");
+const labelSettingsLang = document.getElementById("label-settings-lang");
+const labelSettingsAppearance = document.getElementById("label-settings-appearance");
+const themePills = document.getElementById("theme-pills");
+const themeBtnDark = document.getElementById("theme-btn-dark");
+const themeBtnLight = document.getElementById("theme-btn-light");
+const themeBtnSystem = document.getElementById("theme-btn-system");
+const labelSettingsPrivacyTitle = document.getElementById("label-settings-privacy-title");
+const labelSettingsStripExif = document.getElementById("label-settings-strip-exif");
+const toggleStripExif = document.getElementById("toggle-strip-exif");
+const labelSettingsFilesTitle = document.getElementById("label-settings-files-title");
+const labelSettingsSuffixDesc = document.getElementById("label-settings-suffix-desc");
+const inputSettingsDefaultSuffix = document.getElementById("input-settings-default-suffix") as HTMLInputElement | null;
+const iconAboutLogo = document.getElementById("icon-about-logo");
+const labelSettingsAboutDesc = document.getElementById("label-settings-about-desc");
 
 // DOM Elements: Accordions
 const iconFormatHeader = document.getElementById("icon-format-header")!;
@@ -391,6 +489,7 @@ const labelStartBtn = document.getElementById("label-start-btn")!;
 
 // Setup SVGs
 function setupIcons() {
+  if (brandLogo) brandLogo.innerHTML = icons.logo;
   if (btnMinimize) btnMinimize.innerHTML = icons.winMinimize;
   if (btnMaximize) btnMaximize.innerHTML = icons.winMaximize;
   if (btnClose) btnClose.innerHTML = icons.winClose;
@@ -402,6 +501,11 @@ function setupIcons() {
   iconCompactDrop.innerHTML = icons.dropZone;
   iconCompactBrowse.innerHTML = icons.plus;
   iconCompactFolder.innerHTML = icons.folder;
+
+  if (iconPresetHeader) iconPresetHeader.innerHTML = icons.tune;
+  if (iconPresetDelete) iconPresetDelete.innerHTML = icons.trash;
+  if (iconPresetAdd) iconPresetAdd.innerHTML = icons.plus;
+  if (iconPresetSelectChevron) iconPresetSelectChevron.innerHTML = icons.chevronDown;
 
   iconFormatHeader.innerHTML = icons.sparkles;
   iconResizeHeader.innerHTML = icons.expand;
@@ -417,6 +521,10 @@ function setupIcons() {
   clearIcon.innerHTML = icons.trash;
   iconOpenLast.innerHTML = icons.folderOpen;
   btnStartIcon.innerHTML = icons.sparkles;
+
+  if (iconSettings) iconSettings.innerHTML = icons.gear;
+  if (iconModalSettings) iconModalSettings.innerHTML = icons.gear;
+  if (iconAboutLogo) iconAboutLogo.innerHTML = icons.logo;
 }
 
 // Summary Badges
@@ -465,12 +573,13 @@ function updateAdaptiveHeader() {
 
 function updateLanguage(lang: Language) {
   currentLang = lang;
+  appSettings.lang = lang;
   if (lang === "en") {
-    langEnBtn.classList.add("active");
-    langFrBtn.classList.remove("active");
+    langEnBtn?.classList.add("active");
+    langFrBtn?.classList.remove("active");
   } else {
-    langFrBtn.classList.add("active");
-    langEnBtn.classList.remove("active");
+    langFrBtn?.classList.add("active");
+    langEnBtn?.classList.remove("active");
   }
 
   // Windows tooltips
@@ -493,7 +602,29 @@ function updateLanguage(lang: Language) {
   if (labelModalPresetPreview) labelModalPresetPreview.textContent = t("presetModalPreview");
   if (btnCancelPresetSave) btnCancelPresetSave.textContent = t("presetModalCancel");
   if (btnConfirmPresetSave) btnConfirmPresetSave.textContent = t("presetModalSave");
-  renderPresetChips();
+
+  if (labelPresetHeader) labelPresetHeader.textContent = t("presetLabel");
+  if (labelPresetAdd) labelPresetAdd.textContent = t("presetSaveBtn");
+  if (btnPresetAdd) btnPresetAdd.title = t("presetChipAddTitle");
+  if (btnPresetDelete) btnPresetDelete.title = t("presetDeleteBtn");
+  renderPresetSelector();
+
+  // Settings Modal labels
+  if (btnOpenSettings) btnOpenSettings.title = t("settingsTitle");
+  if (titleModalSettings) titleModalSettings.textContent = t("settingsTitle");
+  if (labelSettingsLang) labelSettingsLang.textContent = t("settingsLangTitle");
+  if (langFrBtn) langFrBtn.textContent = t("settingsLangFr");
+  if (langEnBtn) langEnBtn.textContent = t("settingsLangEn");
+  if (labelSettingsAppearance) labelSettingsAppearance.textContent = t("settingsAppearance");
+  if (themeBtnDark) themeBtnDark.textContent = t("settingsThemeDark");
+  if (themeBtnLight) themeBtnLight.textContent = t("settingsThemeLight");
+  if (themeBtnSystem) themeBtnSystem.textContent = t("settingsThemeSystem");
+  if (labelSettingsPrivacyTitle) labelSettingsPrivacyTitle.textContent = t("settingsPrivacyTitle");
+  if (labelSettingsStripExif) labelSettingsStripExif.textContent = t("settingsStripExif");
+  if (labelSettingsFilesTitle) labelSettingsFilesTitle.textContent = t("settingsFilesTitle");
+  if (labelSettingsSuffixDesc) labelSettingsSuffixDesc.textContent = t("settingsDefaultSuffixDesc");
+  if (labelSettingsAboutDesc) labelSettingsAboutDesc.textContent = t("settingsAboutDesc");
+  if (btnDoneSettings) btnDoneSettings.textContent = t("settingsCloseBtn");
 
   labelFormatHeader.textContent = t("sectionFormat");
   labelResizeHeader.textContent = t("sectionResize");
@@ -1054,6 +1185,21 @@ function loadPreferences() {
 }
 
 // Preset Technical Formatter & Helpers
+export function getActiveSettings() {
+  return {
+    format: selectedFormat,
+    quality: qualityVal,
+    targetSizeEnabled,
+    targetSizeVal,
+    targetSizeUnit,
+    resizeMode: selectedResizeMode,
+    customWidth,
+    customHeight,
+    fitMode: selectedFitMode,
+    scaleVal,
+  };
+}
+
 export function formatPresetTechnicalDetails(
   settings: {
     format: string;
@@ -1144,10 +1290,17 @@ function loadPresets() {
   }
 }
 
-const CARD_INACTIVE_CLASS =
-  "preset-card relative text-left px-3 py-1.5 rounded-xl bg-slate-800/50 hover:bg-slate-700/70 border border-slate-700/50 text-slate-300 transition-all cursor-pointer whitespace-nowrap shrink-0 flex flex-col justify-center";
-const CARD_ACTIVE_CLASS =
-  "preset-card active relative text-left px-3 py-1.5 rounded-xl bg-blue-600/15 border-blue-500/40 text-blue-300 transition-all cursor-pointer whitespace-nowrap shrink-0 flex flex-col justify-center shadow-[0_0_12px_rgba(59,130,246,0.15)]";
+function updateDeleteButtonVisibility() {
+  if (!btnPresetDelete) return;
+  const isUserPresetActive = activePresetId !== null && userPresets.some(p => p.id === activePresetId);
+  if (isUserPresetActive) {
+    btnPresetDelete.classList.remove("hidden");
+    btnPresetDelete.classList.add("flex");
+  } else {
+    btnPresetDelete.classList.add("hidden");
+    btnPresetDelete.classList.remove("flex");
+  }
+}
 
 function deleteUserPreset(id: string) {
   const idx = userPresets.findIndex(p => p.id === id);
@@ -1157,119 +1310,64 @@ function deleteUserPreset(id: string) {
       localStorage.setItem("shrinkr_presets", JSON.stringify(userPresets));
     } catch (_) {}
     if (activePresetId === id) {
-      activePresetId = null;
+      activePresetId = BUILT_IN_PRESETS[0].id;
       try {
-        localStorage.removeItem("shrinkr_active_preset");
+        localStorage.setItem("shrinkr_active_preset", activePresetId);
       } catch (_) {}
+      applyPreset(BUILT_IN_PRESETS[0]);
+    } else {
+      renderPresetSelector();
     }
-    renderPresetChips();
   }
 }
 
-function renderPresetChips() {
-  if (!presetChipsList) return;
-  presetChipsList.innerHTML = "";
+function renderPresetSelector() {
+  if (!presetSelect) return;
+  presetSelect.innerHTML = "";
 
-  // 1. User Custom Presets (2 lines, Star icon on Line 1, Delete cross on top-right)
-  for (const p of userPresets) {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.dataset.presetId = p.id;
-    card.title = p.name; // Full tooltip
-
-    const isActive = p.id === activePresetId;
-    card.className = (isActive ? CARD_ACTIVE_CLASS : CARD_INACTIVE_CLASS) + " pr-7";
-
-    // Split custom name into Title and Specs
-    const parts = p.name.split(" — ");
-    const titleText = parts[0].trim();
-    const specsText = parts[1] ? parts[1].trim() : formatPresetTechnicalDetails(p, currentLang);
-
-    // Line 1: Title with Star ⭐
-    const line1 = document.createElement("div");
-    line1.className = "flex items-center gap-1.5 pointer-events-none";
-
-    const star = document.createElement("span");
-    star.className = "text-amber-400 text-[11px] shrink-0";
-    star.textContent = "⭐";
-    line1.appendChild(star);
-
-    const titleSpan = document.createElement("span");
-    titleSpan.className = isActive
-      ? "text-xs font-medium text-blue-200 truncate max-w-[140px]"
-      : "text-xs font-medium text-slate-200 truncate max-w-[140px]";
-    titleSpan.textContent = titleText;
-    line1.appendChild(titleSpan);
-
-    card.appendChild(line1);
-
-    // Line 2: Specs
-    const line2 = document.createElement("span");
-    line2.className = isActive
-      ? "text-[10px] font-mono text-blue-400/90 mt-0.5 pointer-events-none truncate max-w-[160px]"
-      : "text-[10px] font-mono text-slate-400 mt-0.5 pointer-events-none truncate max-w-[160px]";
-    line2.textContent = specsText;
-    card.appendChild(line2);
-
-    // Top-Right Delete Micro-Cross ✕
-    const delBtn = document.createElement("span");
-    delBtn.className =
-      "absolute top-1.5 right-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-full w-4 h-4 flex items-center justify-center text-[10px] transition-colors leading-none shrink-0";
-    delBtn.title = t("presetChipDeleteTitle");
-    delBtn.textContent = "✕";
-    delBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      deleteUserPreset(p.id);
-    });
-    card.appendChild(delBtn);
-
-    card.addEventListener("click", () => {
-      applyPreset(p);
-    });
-
-    presetChipsList.appendChild(card);
+  // 1. User Custom Presets (OptGroup)
+  if (userPresets.length > 0) {
+    const userGroup = document.createElement("optgroup");
+    userGroup.label = t("presetCustomGroup");
+    for (const p of userPresets) {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      const parts = p.name.split(" — ");
+      const title = parts[0].trim();
+      const specs = parts[1] ? parts[1].trim() : formatPresetTechnicalDetails(p, currentLang);
+      opt.textContent = `⭐ ${title} — ${specs}`;
+      userGroup.appendChild(opt);
+    }
+    presetSelect.appendChild(userGroup);
   }
 
-  // 2. Built-in Recommended Presets (2 lines: Title + Specs)
+  // 2. Built-in Recommended Presets (OptGroup)
+  const builtInGroup = document.createElement("optgroup");
+  builtInGroup.label = t("presetRecommendedGroup");
   for (const p of BUILT_IN_PRESETS) {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.dataset.presetId = p.id;
-    card.title = p.nameKey ? t(p.nameKey) : p.name;
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    opt.textContent = p.nameKey ? t(p.nameKey) : (p.titleKey ? `${t(p.titleKey)} — ${formatPresetTechnicalDetails(p, currentLang)}` : p.name);
+    builtInGroup.appendChild(opt);
+  }
+  presetSelect.appendChild(builtInGroup);
 
-    const isActive = p.id === activePresetId;
-    card.className = isActive ? CARD_ACTIVE_CLASS : CARD_INACTIVE_CLASS;
+  // 3. Custom / Modified Option (shown when manual settings deviate)
+  const customOpt = document.createElement("option");
+  customOpt.value = "custom";
+  customOpt.textContent = t("presetCustomOption");
+  customOpt.disabled = true;
+  presetSelect.appendChild(customOpt);
 
-    // Line 1: Title
-    const titleSpan = document.createElement("span");
-    titleSpan.className = isActive
-      ? "text-xs font-medium text-blue-200 pointer-events-none"
-      : "text-xs font-medium text-slate-200 pointer-events-none";
-    titleSpan.textContent = p.titleKey ? t(p.titleKey) : p.name;
-    card.appendChild(titleSpan);
-
-    // Line 2: Specs
-    const specsSpan = document.createElement("span");
-    specsSpan.className = isActive
-      ? "text-[10px] font-mono text-blue-400/90 mt-0.5 pointer-events-none"
-      : "text-[10px] font-mono text-slate-400 mt-0.5 pointer-events-none";
-    specsSpan.textContent = p.specsKey ? t(p.specsKey) : "";
-    card.appendChild(specsSpan);
-
-    card.addEventListener("click", () => {
-      applyPreset(p);
-    });
-
-    presetChipsList.appendChild(card);
+  // Set selected value
+  if (activePresetId && (userPresets.some(p => p.id === activePresetId) || BUILT_IN_PRESETS.some(p => p.id === activePresetId))) {
+    presetSelect.value = activePresetId;
+  } else {
+    presetSelect.value = "custom";
   }
 
-  // Update add button label and tooltip
-  if (labelPresetChipAdd) {
-    labelPresetChipAdd.textContent = t("presetChipNew");
-  }
-  if (btnPresetChipAdd) {
-    btnPresetChipAdd.title = t("presetChipAddTitle");
-  }
+  // Update delete button visibility for active user preset
+  updateDeleteButtonVisibility();
 }
 
 function applyPreset(preset: Preset) {
@@ -1363,7 +1461,7 @@ function applyPreset(preset: Preset) {
     userHasModifiedDimensions = true;
   }
 
-  renderPresetChips();
+  renderPresetSelector();
   updateSummaryBadges();
   renderFileList();
   savePreferences();
@@ -1375,7 +1473,8 @@ function markPresetCustom() {
     try {
       localStorage.removeItem("shrinkr_active_preset");
     } catch (_) {}
-    renderPresetChips();
+    if (presetSelect) presetSelect.value = "custom";
+    updateDeleteButtonVisibility();
   }
 }
 
@@ -1410,13 +1509,17 @@ function setupEvents() {
   });
 
   // Language Switch
-  langEnBtn.addEventListener("click", () => {
+  langEnBtn?.addEventListener("click", () => {
+    appSettings.lang = "en";
+    saveAppSettings();
+    savePreferences();
     updateLanguage("en");
-    savePreferences();
   });
-  langFrBtn.addEventListener("click", () => {
-    updateLanguage("fr");
+  langFrBtn?.addEventListener("click", () => {
+    appSettings.lang = "fr";
+    saveAppSettings();
     savePreferences();
+    updateLanguage("fr");
   });
 
   // Accordion Expand/Collapse
@@ -1633,19 +1736,6 @@ function setupEvents() {
     });
   });
 
-  const getActiveSettings = () => ({
-    format: selectedFormat,
-    quality: qualityVal,
-    targetSizeEnabled,
-    targetSizeVal,
-    targetSizeUnit,
-    resizeMode: selectedResizeMode,
-    customWidth,
-    customHeight,
-    fitMode: selectedFitMode,
-    scaleVal,
-  });
-
   const updateModalPreview = () => {
     const suffix = formatPresetTechnicalDetails(getActiveSettings(), currentLang);
     const rawVal = inputPresetName.value.trim();
@@ -1655,7 +1745,21 @@ function setupEvents() {
     }
   };
 
-  btnPresetChipAdd?.addEventListener("click", () => {
+  presetSelect?.addEventListener("change", () => {
+    const selectedId = presetSelect.value;
+    const found = userPresets.find(p => p.id === selectedId) || BUILT_IN_PRESETS.find(p => p.id === selectedId);
+    if (found) {
+      applyPreset(found);
+    }
+  });
+
+  btnPresetDelete?.addEventListener("click", () => {
+    if (activePresetId && userPresets.some(p => p.id === activePresetId)) {
+      deleteUserPreset(activePresetId);
+    }
+  });
+
+  btnPresetAdd?.addEventListener("click", () => {
     modalSavePreset.classList.remove("hidden");
     inputPresetName.value = "";
     updateModalPreview();
@@ -1715,7 +1819,7 @@ function setupEvents() {
       localStorage.setItem("shrinkr_active_preset", newPreset.id);
     } catch (_) {}
     closeModal();
-    renderPresetChips();
+    renderPresetSelector();
     savePreferences();
   };
 
@@ -1726,6 +1830,60 @@ function setupEvents() {
       handleSavePreset();
     } else if (e.key === "Escape") {
       closeModal();
+    }
+  });
+
+  // Settings Modal Events
+  const openSettingsModal = () => {
+    updateSettingsUI();
+    modalSettings?.classList.remove("hidden");
+  };
+
+  const closeSettingsModal = () => {
+    modalSettings?.classList.add("hidden");
+  };
+
+  btnOpenSettings?.addEventListener("click", openSettingsModal);
+  btnCloseSettingsModal?.addEventListener("click", closeSettingsModal);
+  btnDoneSettings?.addEventListener("click", closeSettingsModal);
+
+  modalSettings?.addEventListener("click", (e) => {
+    if (e.target === modalSettings) closeSettingsModal();
+  });
+
+  // Theme pills
+  themePills?.querySelectorAll("[data-theme]").forEach(pill => {
+    pill.addEventListener("click", () => {
+      const theme = (pill as HTMLElement).dataset.theme as "dark" | "light" | "system";
+      if (theme) {
+        applyTheme(theme);
+        themePills?.querySelectorAll("[data-theme]").forEach(p => {
+          p.classList.toggle("active", p === pill);
+        });
+        saveAppSettings();
+      }
+    });
+  });
+
+  // Strip EXIF toggle
+  toggleStripExif?.addEventListener("click", () => {
+    appSettings.stripExif = !appSettings.stripExif;
+    toggleStripExif.classList.toggle("active", appSettings.stripExif);
+    toggleStripExif.setAttribute("aria-checked", appSettings.stripExif.toString());
+    saveAppSettings();
+  });
+
+  // Default suffix input
+  inputSettingsDefaultSuffix?.addEventListener("input", () => {
+    appSettings.defaultSuffix = inputSettingsDefaultSuffix.value.trim() || "_min";
+    saveAppSettings();
+  });
+
+  // Global keydown for Escape
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeModal();
+      closeSettingsModal();
     }
   });
 
@@ -1950,8 +2108,15 @@ function setupEvents() {
 }
 
 // Initial Boot
+appSettings = loadAppSettings();
+currentLang = appSettings.lang;
+applyTheme(appSettings.theme);
 setupIcons();
 loadPresets();
 loadPreferences();
+if (appSettings.lang) {
+  currentLang = appSettings.lang;
+}
 setupEvents();
 updateLanguage(currentLang);
+updateSettingsUI();

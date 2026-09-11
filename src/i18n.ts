@@ -119,6 +119,23 @@ export interface Translations {
   winMaximize: string;
   winRestore: string;
   winClose: string;
+
+  // Settings Modal
+  settingsTitle: string;
+  settingsLangTitle: string;
+  settingsLangFr: string;
+  settingsLangEn: string;
+  settingsAppearance: string;
+  settingsThemeDark: string;
+  settingsThemeLight: string;
+  settingsThemeSystem: string;
+  settingsPrivacyTitle: string;
+  settingsStripExif: string;
+  settingsFilesTitle: string;
+  settingsDefaultSuffixDesc: string;
+  settingsAboutTitle: string;
+  settingsAboutDesc: string;
+  settingsCloseBtn: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -193,7 +210,7 @@ export const translations: Record<Language, Translations> = {
     noFilesWarning: "Please add at least one image to process.",
     confirmClear: "Clear the current queue?",
     // Presets
-    presetLabel: "Preset:",
+    presetLabel: "Preset",
     presetCustomGroup: "My Presets",
     presetRecommendedGroup: "Recommended Presets",
     presetWebStandard: "Web Standard — WEBP • 1080p Fit • 82%",
@@ -220,8 +237,8 @@ export const translations: Record<Language, Translations> = {
     presetChipNew: "+ New",
     presetChipDeleteTitle: "Delete this preset",
     presetChipAddTitle: "Save current settings as preset",
-    presetSaveBtn: "+ Save",
-    presetDeleteBtn: "Delete preset",
+    presetSaveBtn: "+ New",
+    presetDeleteBtn: "Delete Preset",
     presetCustomOption: "Custom (Modified)",
     presetModalTitle: "Save Preset",
     presetModalDesc: "Save current compression and resize settings as a reusable preset.",
@@ -234,6 +251,23 @@ export const translations: Record<Language, Translations> = {
     winMaximize: "Maximize",
     winRestore: "Restore",
     winClose: "Close",
+
+    // Settings Modal
+    settingsTitle: "Settings",
+    settingsLangTitle: "Language",
+    settingsLangFr: "Français",
+    settingsLangEn: "English",
+    settingsAppearance: "Appearance",
+    settingsThemeDark: "Dark (default)",
+    settingsThemeLight: "Light",
+    settingsThemeSystem: "System",
+    settingsPrivacyTitle: "Privacy and metadata",
+    settingsStripExif: "Strip EXIF metadata during processing",
+    settingsFilesTitle: "Files",
+    settingsDefaultSuffixDesc: "Default suffix",
+    settingsAboutTitle: "About",
+    settingsAboutDesc: "shrinkr v1.0 • Local and private engine",
+    settingsCloseBtn: "Close",
   },
   fr: {
     appTitle: "shrinkr",
@@ -246,8 +280,8 @@ export const translations: Record<Language, Translations> = {
     addFilesCompact: "+ Fichiers",
     addFolderCompact: "+ Dossier",
 
-    sectionFormat: "Format & compression",
-    sectionResize: "Redimensionnement",
+    sectionFormat: "Format et compression",
+    sectionResize: "Moteur de redimensionnement",
     sectionDest: "Dossier de destination",
 
     outputFormat: "Format de sortie",
@@ -287,8 +321,8 @@ export const translations: Record<Language, Translations> = {
 
     fileQueue: "File d'attente et résultats",
     filesSelected: "fichiers prêts",
-    clearQueue: "Vider la liste",
-    startCompression: "Lancer la compression",
+    clearQueue: "Vider la file d'attente",
+    startCompression: "Compresser les images",
     compressing: "Compression en cours...",
     completed: "Traitement terminé !",
     statusPending: "En attente",
@@ -306,7 +340,7 @@ export const translations: Record<Language, Translations> = {
     noFilesWarning: "Veuillez ajouter au moins une image à traiter.",
     confirmClear: "Vider la file d'attente actuelle ?",
     // Presets
-    presetLabel: "Préréglage :",
+    presetLabel: "Préréglage",
     presetCustomGroup: "Mes préréglages",
     presetRecommendedGroup: "Préréglages recommandés",
     presetWebStandard: "Web standard — WEBP • 1080p ajusté • 82%",
@@ -333,7 +367,7 @@ export const translations: Record<Language, Translations> = {
     presetChipNew: "+ Nouveau",
     presetChipDeleteTitle: "Supprimer ce préréglage",
     presetChipAddTitle: "Enregistrer la configuration actuelle en préréglage",
-    presetSaveBtn: "+ Enregistrer",
+    presetSaveBtn: "+ Nouveau",
     presetDeleteBtn: "Supprimer le préréglage",
     presetCustomOption: "Personnalisé (modifié)",
     presetModalTitle: "Enregistrer le préréglage",
@@ -347,5 +381,22 @@ export const translations: Record<Language, Translations> = {
     winMaximize: "Agrandir",
     winRestore: "Niveau inférieur",
     winClose: "Fermer",
+
+    // Settings Modal
+    settingsTitle: "Paramètres",
+    settingsLangTitle: "Langue",
+    settingsLangFr: "Français",
+    settingsLangEn: "English",
+    settingsAppearance: "Apparence",
+    settingsThemeDark: "Sombre (défaut)",
+    settingsThemeLight: "Clair",
+    settingsThemeSystem: "Système",
+    settingsPrivacyTitle: "Confidentialité et métadonnées",
+    settingsStripExif: "Supprimer les métadonnées EXIF lors du traitement",
+    settingsFilesTitle: "Fichiers",
+    settingsDefaultSuffixDesc: "Suffixe par défaut",
+    settingsAboutTitle: "À propos",
+    settingsAboutDesc: "shrinkr v1.0 • Moteur local et privé",
+    settingsCloseBtn: "Fermer",
   }
 };

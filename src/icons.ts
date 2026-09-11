@@ -1,4 +1,24 @@
 export const icons = {
+  logo: `<svg class="w-5 h-5 text-cyan-400 brand-logo-glow" style="filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.4)) drop-shadow(0 0 12px rgba(59, 130, 246, 0.3));" viewBox="0 0 24 24" fill="none">
+    <defs>
+      <linearGradient id="shrinkrLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#22D3EE"/>
+        <stop offset="50%" stop-color="#38BDF8"/>
+        <stop offset="100%" stop-color="#3B82F6"/>
+      </linearGradient>
+    </defs>
+    <path d="M7.5 10H10V7.5" stroke="url(#shrinkrLogoGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4 4L9.5 9.5" stroke="url(#shrinkrLogoGrad)" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M16.5 14H14V16.5" stroke="url(#shrinkrLogoGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M20 20L14.5 14.5" stroke="url(#shrinkrLogoGrad)" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="12" cy="12" r="1.75" fill="#22D3EE"/>
+  </svg>`,
+
+  gear: `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
+  </svg>`,
+
   shrink: `<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4 14h6v6"></path>
     <path d="M20 10h-6V4"></path>
