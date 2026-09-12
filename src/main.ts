@@ -1,8 +1,11 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getVersion } from "@tauri-apps/api/app";
 import { open } from "@tauri-apps/plugin-dialog";
-import { openPath } from "@tauri-apps/plugin-opener";
+import { openPath, openUrl } from "@tauri-apps/plugin-opener";
+import { check, Update } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import { translations, Language, Translations } from "./i18n";
 import { icons } from "./icons";
 
@@ -21,6 +24,7 @@ export interface ImageItem {
   outputWidth?: number;
   outputHeight?: number;
   error?: string;
+  thumbnail?: string | null;
 }
 
 export interface BatchOptions {
@@ -192,14 +196,6 @@ export const BUILT_IN_PRESETS: Preset[] = [
   },
 ];
 
-// State
-let currentLang: Language = "en";
-let filesQueue: ImageItem[] = [];
-let isProcessing = false;
-let isMaximized = false;
-let userPresets: Preset[] = [];
-let activePresetId: string | null = null;
-
 // App Settings State & Storage
 export interface AppSettings {
   lang: Language;
@@ -208,24 +204,50 @@ export interface AppSettings {
   defaultSuffix: string;
 }
 
-const SETTINGS_STORAGE_KEY = "shrinkr_settings";
+const SETTINGS_STORAGE_KEY = "krushr_settings";
+const PREFERENCES_STORAGE_KEY = "krushr_user_preferences";
+const PRESETS_STORAGE_KEY = "krushr_presets";
+const ACTIVE_PRESET_STORAGE_KEY = "krushr_active_preset";
+const LANGUAGE_STORAGE_KEY = "krushr_language";
+
+export function getSavedLanguage(): Language {
+  try {
+    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (stored === "fr" || stored === "en") {
+      return stored;
+    }
+  } catch (e) {
+    console.warn("Failed to read krushr_language from localStorage:", e);
+  }
+  // Premier démarrage : forcer l'anglais par défaut
+  return "en";
+}
+
+// State
+let currentLang: Language = getSavedLanguage();
+let filesQueue: ImageItem[] = [];
+let isProcessing = false;
+let isMaximized = false;
+let userPresets: Preset[] = [];
+let activePresetId: string | null = null;
 
 const defaultSettings: AppSettings = {
-  lang: "fr",
+  lang: "en",
   theme: "dark",
   stripExif: true,
   defaultSuffix: "_min",
 };
 
-let appSettings: AppSettings = { ...defaultSettings };
+let appSettings: AppSettings = { ...defaultSettings, lang: currentLang };
 
 function loadAppSettings(): AppSettings {
+  const lang = getSavedLanguage();
   try {
-    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY) || localStorage.getItem("shrinkr_settings");
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
-        lang: parsed.lang === "en" || parsed.lang === "fr" ? parsed.lang : defaultSettings.lang,
+        lang,
         theme: parsed.theme === "light" || parsed.theme === "system" ? parsed.theme : "dark",
         stripExif: typeof parsed.stripExif === "boolean" ? parsed.stripExif : defaultSettings.stripExif,
         defaultSuffix: typeof parsed.defaultSuffix === "string" ? parsed.defaultSuffix : defaultSettings.defaultSuffix,
@@ -234,15 +256,30 @@ function loadAppSettings(): AppSettings {
   } catch (e) {
     console.warn("Failed to load settings:", e);
   }
-  return { ...defaultSettings };
+  return { ...defaultSettings, lang };
 }
 
 function saveAppSettings() {
   try {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(appSettings));
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, appSettings.lang);
   } catch (e) {
     console.warn("Failed to save settings:", e);
   }
+}
+
+export function setAppLanguage(lang: Language) {
+  currentLang = lang;
+  appSettings.lang = lang;
+  try {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+  } catch (e) {
+    console.warn("Failed to save krushr_language to localStorage:", e);
+  }
+  saveAppSettings();
+  savePreferences();
+  updateLanguage(lang);
+  updateSettingsUI();
 }
 
 function applyTheme(theme: "dark" | "light" | "system") {
@@ -250,9 +287,29 @@ function applyTheme(theme: "dark" | "light" | "system") {
   document.documentElement.setAttribute("data-theme", theme);
 }
 
+function updateLanguageButtonStates(activeLang: Language) {
+  if (langEnBtn) {
+    const isActive = activeLang === "en";
+    langEnBtn.classList.toggle("active", isActive);
+    if (isActive) {
+      langEnBtn.className = "pill-item active flex-1 text-center py-1.5 text-xs font-medium cursor-pointer transition-all rounded-lg bg-white/10 text-white border border-white/10";
+    } else {
+      langEnBtn.className = "pill-item flex-1 text-center py-1.5 text-xs font-medium cursor-pointer transition-all rounded-lg text-zinc-400 hover:text-white border border-transparent";
+    }
+  }
+  if (langFrBtn) {
+    const isActive = activeLang === "fr";
+    langFrBtn.classList.toggle("active", isActive);
+    if (isActive) {
+      langFrBtn.className = "pill-item active flex-1 text-center py-1.5 text-xs font-medium cursor-pointer transition-all rounded-lg bg-white/10 text-white border border-white/10";
+    } else {
+      langFrBtn.className = "pill-item flex-1 text-center py-1.5 text-xs font-medium cursor-pointer transition-all rounded-lg text-zinc-400 hover:text-white border border-transparent";
+    }
+  }
+}
+
 function updateSettingsUI() {
-  if (langFrBtn) langFrBtn.classList.toggle("active", currentLang === "fr");
-  if (langEnBtn) langEnBtn.classList.toggle("active", currentLang === "en");
+  updateLanguageButtonStates(currentLang);
 
   themePills?.querySelectorAll("[data-theme]").forEach(pill => {
     pill.classList.toggle("active", (pill as HTMLElement).dataset.theme === appSettings.theme);
@@ -289,7 +346,7 @@ let userHasModifiedDimensions = false;
 // Selected Settings: Destination
 let saveSameFolder = true;
 let customOutputDir: string | null = null;
-let fileSuffixVal = "_shrinkr";
+let fileSuffixVal = appSettings.defaultSuffix || "_min";
 let overwriteSourceVal = false;
 let lastBatchOutputPath: string | null = null;
 
@@ -400,6 +457,199 @@ const inputSettingsDefaultSuffix = document.getElementById("input-settings-defau
 const iconAboutLogo = document.getElementById("icon-about-logo");
 const labelSettingsAboutDesc = document.getElementById("label-settings-about-desc");
 
+// DOM Elements: Settings Modal Updater
+const btnCheckUpdates = document.getElementById("btn-check-updates") as HTMLButtonElement | null;
+const iconCheckUpdates = document.getElementById("icon-check-updates");
+const labelCheckUpdates = document.getElementById("label-check-updates");
+const btnInstallUpdate = document.getElementById("btn-install-update") as HTMLButtonElement | null;
+const iconInstallUpdate = document.getElementById("icon-install-update");
+const labelInstallUpdate = document.getElementById("label-install-update");
+const updaterStatusArea = document.getElementById("updater-status-area");
+const updaterStatusText = document.getElementById("updater-status-text");
+const updaterProgressBarWrapper = document.getElementById("updater-progress-bar-wrapper");
+const updaterProgressBar = document.getElementById("updater-progress-bar");
+
+// Official GitHub Repository and Releases URLs
+const GITHUB_REPO_URL = "https://github.com/zarwizz/krushr";
+const GITHUB_RELEASES_URL = "https://github.com/zarwizz/krushr/releases";
+
+// Updater State & Logic
+type UpdaterStatusState = "idle" | "checking" | "up-to-date" | "available" | "downloading" | "error";
+let updaterState: UpdaterStatusState = "idle";
+let availableUpdate: Update | null = null;
+let currentAppVersion = "1.0.0";
+let downloadPercent = 0;
+let isCheckingUpdate = false;
+let isInstallingUpdate = false;
+
+function refreshUpdaterStatusUI() {
+  if (!updaterStatusArea || !updaterStatusText || !updaterProgressBarWrapper || !updaterProgressBar) return;
+
+  switch (updaterState) {
+    case "idle":
+      updaterStatusArea.classList.add("hidden");
+      updaterProgressBarWrapper.classList.add("hidden");
+      if (btnCheckUpdates) {
+        btnCheckUpdates.classList.remove("hidden");
+        btnCheckUpdates.disabled = false;
+      }
+      if (iconCheckUpdates) iconCheckUpdates.innerHTML = icons.refresh;
+      if (labelCheckUpdates) labelCheckUpdates.textContent = t("settingsCheckUpdatesBtn");
+      if (btnInstallUpdate) btnInstallUpdate.classList.add("hidden");
+      break;
+
+    case "checking":
+      updaterStatusArea.classList.remove("hidden");
+      updaterProgressBarWrapper.classList.add("hidden");
+      if (btnCheckUpdates) {
+        btnCheckUpdates.classList.remove("hidden");
+        btnCheckUpdates.disabled = true;
+      }
+      if (iconCheckUpdates) iconCheckUpdates.innerHTML = icons.spinner;
+      if (labelCheckUpdates) labelCheckUpdates.textContent = t("settingsCheckingUpdates");
+      if (btnInstallUpdate) btnInstallUpdate.classList.add("hidden");
+      updaterStatusText.innerHTML = `<span class="text-zinc-400 inline-flex items-center gap-1.5">${icons.spinner} ${t("settingsCheckingUpdates")}</span>`;
+      break;
+
+    case "up-to-date":
+      updaterStatusArea.classList.remove("hidden");
+      updaterProgressBarWrapper.classList.add("hidden");
+      if (btnCheckUpdates) {
+        btnCheckUpdates.classList.remove("hidden");
+        btnCheckUpdates.disabled = false;
+      }
+      if (iconCheckUpdates) iconCheckUpdates.innerHTML = icons.refresh;
+      if (labelCheckUpdates) labelCheckUpdates.textContent = t("settingsCheckUpdatesBtn");
+      if (btnInstallUpdate) btnInstallUpdate.classList.add("hidden");
+      const upToDateMsg = t("settingsUpdateLatest").replace("{version}", currentAppVersion);
+      updaterStatusText.innerHTML = `<span class="inline-flex items-center gap-1.5 text-emerald-400 font-medium"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>${upToDateMsg}</span>`;
+      break;
+
+    case "available":
+      updaterStatusArea.classList.remove("hidden");
+      updaterProgressBarWrapper.classList.add("hidden");
+      if (btnCheckUpdates) btnCheckUpdates.classList.add("hidden");
+      if (btnInstallUpdate) {
+        btnInstallUpdate.classList.remove("hidden");
+        btnInstallUpdate.disabled = false;
+      }
+      if (iconInstallUpdate) iconInstallUpdate.innerHTML = icons.download;
+      if (labelInstallUpdate) labelInstallUpdate.textContent = t("settingsUpdateInstallRestartBtn");
+      const newVer = availableUpdate?.version || "";
+      const availableMsg = t("settingsUpdateAvailable").replace("{version}", newVer);
+      updaterStatusText.innerHTML = `<span class="inline-flex items-center gap-1.5 text-orange-400 font-medium"><span class="w-1.5 h-1.5 rounded-full bg-orange-400"></span>${availableMsg} <button id="btn-status-releases" type="button" class="underline ml-1 text-xs text-orange-300 hover:text-white cursor-pointer font-normal">Releases ↗</button></span>`;
+      document.getElementById("btn-status-releases")?.addEventListener("click", () => {
+        openUrl(GITHUB_RELEASES_URL).catch(() => window.open(GITHUB_RELEASES_URL, "_blank"));
+      });
+      break;
+
+    case "downloading":
+      updaterStatusArea.classList.remove("hidden");
+      updaterProgressBarWrapper.classList.remove("hidden");
+      updaterProgressBar.style.width = `${downloadPercent}%`;
+      if (btnCheckUpdates) btnCheckUpdates.classList.add("hidden");
+      if (btnInstallUpdate) {
+        btnInstallUpdate.classList.remove("hidden");
+        btnInstallUpdate.disabled = true;
+      }
+      if (iconInstallUpdate) iconInstallUpdate.innerHTML = icons.spinner;
+      const downloadingLabel = downloadPercent > 0 
+        ? `${t("settingsUpdateDownloading")} (${downloadPercent}%)` 
+        : t("settingsUpdateDownloading");
+      updaterStatusText.innerHTML = `<span class="text-orange-400 font-medium inline-flex items-center gap-1.5">${icons.spinner} ${downloadingLabel}</span>`;
+      break;
+
+    case "error":
+      updaterStatusArea.classList.remove("hidden");
+      updaterProgressBarWrapper.classList.add("hidden");
+      if (btnCheckUpdates) {
+        btnCheckUpdates.classList.remove("hidden");
+        btnCheckUpdates.disabled = false;
+      }
+      if (iconCheckUpdates) iconCheckUpdates.innerHTML = icons.refresh;
+      if (labelCheckUpdates) labelCheckUpdates.textContent = t("settingsCheckUpdatesBtn");
+      if (btnInstallUpdate) btnInstallUpdate.classList.add("hidden");
+      updaterStatusText.innerHTML = `<span class="inline-flex items-center gap-1.5 text-rose-400">${icons.error} ${t("settingsUpdateError")} <button id="btn-status-releases-err" type="button" class="underline ml-1 text-orange-400 hover:text-orange-300 font-medium cursor-pointer">Releases ↗</button></span>`;
+      document.getElementById("btn-status-releases-err")?.addEventListener("click", () => {
+        openUrl(GITHUB_RELEASES_URL).catch(() => window.open(GITHUB_RELEASES_URL, "_blank"));
+      });
+      break;
+  }
+}
+
+async function handleCheckUpdates() {
+  if (isCheckingUpdate || isInstallingUpdate) return;
+  isCheckingUpdate = true;
+  updaterState = "checking";
+  refreshUpdaterStatusUI();
+
+  try {
+    try {
+      currentAppVersion = await getVersion();
+    } catch (_) {
+      currentAppVersion = "1.0.0";
+    }
+
+    console.log(`[Krushr Updater] Checking endpoint at ${GITHUB_RELEASES_URL}...`);
+    const update = await check();
+    if (update) {
+      availableUpdate = update;
+      updaterState = "available";
+    } else {
+      availableUpdate = null;
+      updaterState = "up-to-date";
+    }
+  } catch (err) {
+    console.error("Updater check failed:", err);
+    availableUpdate = null;
+    updaterState = "error";
+  } finally {
+    isCheckingUpdate = false;
+    refreshUpdaterStatusUI();
+  }
+}
+
+async function handleInstallUpdate() {
+  if (!availableUpdate || isInstallingUpdate) return;
+  isInstallingUpdate = true;
+  updaterState = "downloading";
+  downloadPercent = 0;
+  refreshUpdaterStatusUI();
+
+  try {
+    let downloaded = 0;
+    let contentLength = 0;
+    await availableUpdate.downloadAndInstall((event) => {
+      switch (event.event) {
+        case "Started":
+          contentLength = event.data.contentLength || 0;
+          break;
+        case "Progress":
+          downloaded += event.data.chunkLength;
+          if (contentLength > 0) {
+            downloadPercent = Math.min(100, Math.round((downloaded / contentLength) * 100));
+            if (updaterProgressBar) updaterProgressBar.style.width = `${downloadPercent}%`;
+            if (updaterStatusText) {
+              updaterStatusText.innerHTML = `<span class="text-orange-400 font-medium inline-flex items-center gap-1.5">${icons.spinner} ${t("settingsUpdateDownloading")} (${downloadPercent}%)</span>`;
+            }
+          }
+          break;
+        case "Finished":
+          downloadPercent = 100;
+          if (updaterProgressBar) updaterProgressBar.style.width = "100%";
+          break;
+      }
+    });
+
+    await relaunch();
+  } catch (err) {
+    console.error("Updater install failed:", err);
+    isInstallingUpdate = false;
+    updaterState = "error";
+    refreshUpdaterStatusUI();
+  }
+}
+
 // DOM Elements: Accordions
 const iconFormatHeader = document.getElementById("icon-format-header")!;
 const labelFormatHeader = document.getElementById("label-format-header")!;
@@ -423,12 +673,35 @@ const labelQuality = document.getElementById("label-quality")!;
 const qualityValText = document.getElementById("quality-val")!;
 const inputQuality = document.getElementById("input-quality") as HTMLInputElement;
 
+function updateFormatPillStyles(format: string) {
+  formatPills?.querySelectorAll<HTMLElement>("[data-format]").forEach(p => {
+    const isActive = p.dataset.format === format;
+    p.classList.toggle("active", isActive);
+    if (isActive) {
+      p.className = "pill-item active flex-1 text-center py-1 bg-gradient-to-br from-orange-500 via-rose-500 to-rose-600 text-white font-semibold shadow-md shadow-orange-950/40 border border-orange-400/30 text-xs";
+    } else {
+      p.className = "pill-item flex-1 text-center py-1 font-semibold text-xs bg-slate-900/60 text-slate-400 hover:text-slate-200 border border-white/5";
+    }
+  });
+}
+
 const labelTargetSize = document.getElementById("label-target-size")!;
 const targetSizeDesc = document.getElementById("target-size-desc")!;
 const targetSizeToggle = document.getElementById("target-size-toggle")!;
 const targetSizeInputs = document.getElementById("target-size-inputs")!;
 const inputTargetSize = document.getElementById("input-target-size") as HTMLInputElement;
 const unitPills = document.getElementById("unit-pills")!;
+
+function updateUnitPillStyles(unit: "kb" | "mb") {
+  unitPills?.querySelectorAll<HTMLButtonElement>("[data-unit]").forEach(btn => {
+    const isCurrent = btn.dataset.unit === unit;
+    if (isCurrent) {
+      btn.className = "px-2.5 py-1 text-xs font-semibold transition-colors bg-white/10 text-white cursor-pointer";
+    } else {
+      btn.className = "px-2.5 py-1 text-xs font-semibold transition-colors text-slate-400 hover:text-slate-200 cursor-pointer";
+    }
+  });
+}
 
 // DOM Elements: Resize Engine Section (PowerToys style)
 const labelResizeMode = document.getElementById("label-resize-mode")!;
@@ -525,6 +798,8 @@ function setupIcons() {
   if (iconSettings) iconSettings.innerHTML = icons.gear;
   if (iconModalSettings) iconModalSettings.innerHTML = icons.gear;
   if (iconAboutLogo) iconAboutLogo.innerHTML = icons.logo;
+  if (iconCheckUpdates) iconCheckUpdates.innerHTML = icons.refresh;
+  if (iconInstallUpdate) iconInstallUpdate.innerHTML = icons.download;
 }
 
 // Summary Badges
@@ -574,13 +849,9 @@ function updateAdaptiveHeader() {
 function updateLanguage(lang: Language) {
   currentLang = lang;
   appSettings.lang = lang;
-  if (lang === "en") {
-    langEnBtn?.classList.add("active");
-    langFrBtn?.classList.remove("active");
-  } else {
-    langFrBtn?.classList.add("active");
-    langEnBtn?.classList.remove("active");
-  }
+  document.title = t("appTitle");
+
+  updateLanguageButtonStates(lang);
 
   // Windows tooltips
   if (btnMinimize) btnMinimize.title = t("winMinimize");
@@ -625,6 +896,7 @@ function updateLanguage(lang: Language) {
   if (labelSettingsSuffixDesc) labelSettingsSuffixDesc.textContent = t("settingsDefaultSuffixDesc");
   if (labelSettingsAboutDesc) labelSettingsAboutDesc.textContent = t("settingsAboutDesc");
   if (btnDoneSettings) btnDoneSettings.textContent = t("settingsCloseBtn");
+  refreshUpdaterStatusUI();
 
   labelFormatHeader.textContent = t("sectionFormat");
   labelResizeHeader.textContent = t("sectionResize");
@@ -677,18 +949,24 @@ function updateLanguage(lang: Language) {
 
 function updateFooterMetrics() {
   const count = filesQueue.length;
-  badgeFileCount.textContent = `${count} ${t("filesSelected")}`;
   btnClearAll.disabled = count === 0 || isProcessing;
   btnStart.disabled = count === 0 || isProcessing;
 
   if (count === 0) {
-    footerStatus.textContent = t("statusPending");
+    badgeFileCount.textContent = `0 ${t("fileReadyPlural")}`;
+    badgeFileCount.className = "text-[11px] font-medium bg-slate-800 text-slate-300 border border-white/5 px-2 py-0.5 rounded-full";
+    footerStatus.textContent = t("noFilesInQueue");
+    footerStatus.className = "text-xs text-slate-500 truncate";
     footerSavings.classList.add("hidden");
     progressBar.style.width = "0%";
     btnOpenLastFolder.classList.add("hidden");
     btnOpenLastFolder.classList.remove("flex");
     return;
   }
+
+  const countBadgeText = count === 1 ? `1 ${t("fileReadySingle")}` : `${count} ${t("fileReadyPlural")}`;
+  badgeFileCount.textContent = countBadgeText;
+  badgeFileCount.className = "text-[11px] font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full";
 
   let totalOriginal = 0;
   let totalNew = 0;
@@ -726,12 +1004,14 @@ function updateFooterMetrics() {
 
   if (isProcessing) {
     footerStatus.textContent = `${t("compressing")} (${finishedCount}/${count})`;
+    footerStatus.className = "text-xs font-medium text-orange-400 truncate";
     const pct = Math.round((finishedCount / count) * 100);
     progressBar.style.width = `${pct}%`;
     btnOpenLastFolder.classList.add("hidden");
     btnOpenLastFolder.classList.remove("flex");
   } else if (finishedCount === count && count > 0) {
     footerStatus.textContent = t("completed");
+    footerStatus.className = "text-xs font-medium text-emerald-400 truncate";
     progressBar.style.width = "100%";
     const outPath =
       lastBatchOutputPath ||
@@ -743,7 +1023,8 @@ function updateFooterMetrics() {
       btnOpenLastFolder.classList.add("flex");
     }
   } else {
-    footerStatus.textContent = `${count} ${t("filesSelected")} • ${formatBytes(allTotalOriginal)}`;
+    footerStatus.textContent = `${countBadgeText} • ${formatBytes(allTotalOriginal)}`;
+    footerStatus.className = "text-xs font-medium text-zinc-300 truncate";
   }
 }
 
@@ -765,13 +1046,33 @@ function renderFileList() {
     const row = document.createElement("div");
     row.className = "flex items-center justify-between py-2 px-3 rounded-xl hover:bg-white/[0.04] transition-colors gap-3";
 
-    // Left: Icon + Name + Info
+    // Left: Thumbnail/Icon + Name + Info
     const left = document.createElement("div");
     left.className = "flex items-center gap-3 min-w-0 flex-1";
 
-    const iconBox = document.createElement("div");
-    iconBox.className = "w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center text-zinc-400 shrink-0 border border-white/[0.05]";
-    iconBox.innerHTML = icons.image;
+    let mediaBox: HTMLElement;
+    if (item.thumbnail) {
+      const img = document.createElement("img");
+      img.src = item.thumbnail;
+      img.className = "w-10 h-10 object-cover rounded-lg border border-white/10 shrink-0 transition-opacity duration-200";
+      img.alt = "Preview";
+      img.setAttribute("data-thumb-path", item.path);
+      img.onerror = () => {
+        // Fallback cleanly to SVG placeholder icon on error
+        const fallback = document.createElement("div");
+        fallback.className = "w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center text-zinc-400 shrink-0 border border-white/[0.05]";
+        fallback.innerHTML = icons.image;
+        fallback.setAttribute("data-thumb-path", item.path);
+        img.replaceWith(fallback);
+      };
+      mediaBox = img;
+    } else {
+      const iconBox = document.createElement("div");
+      iconBox.className = "w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center text-zinc-400 shrink-0 border border-white/[0.05]";
+      iconBox.innerHTML = icons.image;
+      iconBox.setAttribute("data-thumb-path", item.path);
+      mediaBox = iconBox;
+    }
 
     const infoBox = document.createElement("div");
     infoBox.className = "flex flex-col min-w-0";
@@ -809,7 +1110,7 @@ function renderFileList() {
       infoBox.appendChild(errLine);
     }
 
-    left.appendChild(iconBox);
+    left.appendChild(mediaBox);
     left.appendChild(infoBox);
 
     // Right: Status & Size Comparison & Actions
@@ -864,7 +1165,7 @@ function renderFileList() {
       }
     } else if (item.status === "processing") {
       const spinnerBox = document.createElement("div");
-      spinnerBox.className = "flex items-center gap-1.5 text-xs text-blue-400";
+      spinnerBox.className = "flex items-center gap-1.5 text-xs text-orange-400";
       spinnerBox.innerHTML = `${icons.spinner} <span>${t("statusProcessing")}</span>`;
       right.appendChild(spinnerBox);
     } else if (item.status === "error") {
@@ -911,14 +1212,74 @@ function renderFileList() {
   });
 }
 
-// Add files & directories handler
+// Background Thumbnail Streaming
+function updateRowThumbnailInDOM(path: string, thumbnail: string) {
+  const elements = fileList.querySelectorAll(`[data-thumb-path]`);
+  for (const el of elements) {
+    if (el.getAttribute("data-thumb-path") === path) {
+      if (el.tagName.toLowerCase() === "img") {
+        (el as HTMLImageElement).src = thumbnail;
+      } else {
+        const img = document.createElement("img");
+        img.src = thumbnail;
+        img.className = "w-10 h-10 object-cover rounded-lg border border-white/10 shrink-0 transition-opacity duration-200";
+        img.alt = "Preview";
+        img.setAttribute("data-thumb-path", path);
+        img.onerror = () => {
+          const fallback = document.createElement("div");
+          fallback.className = "w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center text-zinc-400 shrink-0 border border-white/[0.05]";
+          fallback.innerHTML = icons.image;
+          fallback.setAttribute("data-thumb-path", path);
+          img.replaceWith(fallback);
+        };
+        el.replaceWith(img);
+      }
+    }
+  }
+}
+
+async function fetchThumbnailsInBackground(paths: string[]) {
+  if (!paths || paths.length === 0) return;
+
+  // Process batch in parallel across all CPU cores with Rayon on the native side
+  const CHUNK_SIZE = 16;
+  const chunks: string[][] = [];
+  for (let i = 0; i < paths.length; i += CHUNK_SIZE) {
+    chunks.push(paths.slice(i, i + CHUNK_SIZE));
+  }
+
+  await Promise.all(
+    chunks.map(async (chunk) => {
+      try {
+        const batchMap = await invoke<Record<string, string>>("get_batch_thumbnails", { paths: chunk });
+        if (batchMap) {
+          for (const [path, dataUrl] of Object.entries(batchMap)) {
+            if (dataUrl) {
+              const item = filesQueue.find((f) => f.path === path);
+              if (item) {
+                item.thumbnail = dataUrl;
+              }
+              updateRowThumbnailInDOM(path, dataUrl);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load thumbnail batch chunk:", e);
+      }
+    })
+  );
+}
+
+// Add files & directories handler (Instant 0ms perceived ingestion)
 async function handlePaths(paths: string[]) {
   if (!paths || paths.length === 0) return;
   try {
     const scanned: ImageItem[] = await invoke("scan_paths", { paths });
+    const newlyAddedPaths: string[] = [];
     for (const item of scanned) {
       if (!filesQueue.some(f => f.path === item.path)) {
         filesQueue.push(item);
+        newlyAddedPaths.push(item.path);
       }
     }
 
@@ -943,9 +1304,15 @@ async function handlePaths(paths: string[]) {
       }
     }
 
+    // Immediate instant UI update: items appear right away in 0ms!
     renderFileList();
     updateFooterMetrics();
     updateSummaryBadges();
+
+    // Asynchronously fetch micro-thumbnails in background without blocking UI
+    if (newlyAddedPaths.length > 0) {
+      fetchThumbnailsInBackground(newlyAddedPaths);
+    }
   } catch (err) {
     console.error("Failed to scan paths:", err);
   }
@@ -978,8 +1345,6 @@ interface UserPreferences {
     dest?: boolean;
   };
 }
-
-const PREFERENCES_STORAGE_KEY = "shrinkr_user_preferences";
 
 function savePreferences() {
   try {
@@ -1017,13 +1382,12 @@ function savePreferences() {
 
 function loadPreferences() {
   try {
-    const raw = localStorage.getItem(PREFERENCES_STORAGE_KEY);
+    const raw = localStorage.getItem(PREFERENCES_STORAGE_KEY) || localStorage.getItem("shrinkr_user_preferences");
     if (!raw) return;
     const prefs: UserPreferences = JSON.parse(raw);
 
-    if (prefs.lang === "en" || prefs.lang === "fr") {
-      currentLang = prefs.lang;
-    }
+    // Language is strictly managed by krushr_language
+    prefs.lang = currentLang;
 
     if (typeof prefs.activePresetId !== "undefined") {
       activePresetId = prefs.activePresetId;
@@ -1031,9 +1395,7 @@ function loadPreferences() {
 
     if (prefs.format && ["jpg", "png", "webp", "avif"].includes(prefs.format)) {
       selectedFormat = prefs.format;
-      formatPills?.querySelectorAll("[data-format]").forEach(p => {
-        p.classList.toggle("active", (p as HTMLElement).dataset.format === selectedFormat);
-      });
+      updateFormatPillStyles(selectedFormat);
     }
 
     if (typeof prefs.quality === "number" && prefs.quality >= 5 && prefs.quality <= 100) {
@@ -1062,9 +1424,7 @@ function loadPreferences() {
 
     if (prefs.targetSizeUnit === "kb" || prefs.targetSizeUnit === "mb") {
       targetSizeUnit = prefs.targetSizeUnit;
-      unitPills?.querySelectorAll("[data-unit]").forEach(p => {
-        p.classList.toggle("active", (p as HTMLElement).dataset.unit === targetSizeUnit);
-      });
+      updateUnitPillStyles(targetSizeUnit);
     }
 
     if (prefs.resizeMode && ["original", "custom", "scale"].includes(prefs.resizeMode)) {
@@ -1129,7 +1489,13 @@ function loadPreferences() {
       scaleVal = prefs.scaleVal;
       if (inputScalePercent) inputScalePercent.value = scaleVal.toString();
       scalePresets?.querySelectorAll("[data-scale]").forEach(p => {
-        p.classList.toggle("border-blue-500/40", (p as HTMLElement).dataset.scale === scaleVal.toString());
+        const isMatch = (p as HTMLElement).dataset.scale === scaleVal.toString();
+        p.classList.toggle("border-orange-500/40", isMatch);
+        p.classList.toggle("text-orange-300", isMatch);
+        p.classList.toggle("bg-white/[0.08]", isMatch);
+        p.classList.toggle("text-zinc-300", !isMatch);
+        p.classList.toggle("bg-white/[0.04]", !isMatch);
+        p.classList.toggle("border-white/[0.06]", !isMatch);
       });
     }
 
@@ -1182,6 +1548,7 @@ function loadPreferences() {
   } catch (err) {
     console.warn("Could not load preferences from localStorage:", err);
   }
+  updateUnitPillStyles(targetSizeUnit);
 }
 
 // Preset Technical Formatter & Helpers
@@ -1276,7 +1643,7 @@ export function formatPresetTechnicalDetails(
 // Preset Logic & Handlers
 function loadPresets() {
   try {
-    const raw = localStorage.getItem("shrinkr_presets");
+    const raw = localStorage.getItem(PRESETS_STORAGE_KEY) || localStorage.getItem("shrinkr_presets");
     if (raw) {
       userPresets = JSON.parse(raw);
     }
@@ -1284,7 +1651,7 @@ function loadPresets() {
     console.warn("Failed to load user presets:", e);
   }
 
-  const savedActiveId = localStorage.getItem("shrinkr_active_preset");
+  const savedActiveId = localStorage.getItem(ACTIVE_PRESET_STORAGE_KEY) || localStorage.getItem("shrinkr_active_preset");
   if (savedActiveId) {
     activePresetId = savedActiveId;
   }
@@ -1307,12 +1674,12 @@ function deleteUserPreset(id: string) {
   if (idx !== -1) {
     userPresets.splice(idx, 1);
     try {
-      localStorage.setItem("shrinkr_presets", JSON.stringify(userPresets));
+      localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(userPresets));
     } catch (_) {}
     if (activePresetId === id) {
       activePresetId = BUILT_IN_PRESETS[0].id;
       try {
-        localStorage.setItem("shrinkr_active_preset", activePresetId);
+        localStorage.setItem(ACTIVE_PRESET_STORAGE_KEY, activePresetId);
       } catch (_) {}
       applyPreset(BUILT_IN_PRESETS[0]);
     } else {
@@ -1373,14 +1740,12 @@ function renderPresetSelector() {
 function applyPreset(preset: Preset) {
   activePresetId = preset.id;
   try {
-    localStorage.setItem("shrinkr_active_preset", preset.id);
+    localStorage.setItem(ACTIVE_PRESET_STORAGE_KEY, preset.id);
   } catch (_) {}
 
   // 1. Format
   selectedFormat = preset.format;
-  formatPills.querySelectorAll("[data-format]").forEach(p => {
-    p.classList.toggle("active", (p as HTMLElement).dataset.format === selectedFormat);
-  });
+  updateFormatPillStyles(selectedFormat);
 
   // 2. Quality
   qualityVal = preset.quality;
@@ -1402,9 +1767,7 @@ function applyPreset(preset: Preset) {
   }
   if (preset.targetSizeUnit) {
     targetSizeUnit = preset.targetSizeUnit;
-    unitPills.querySelectorAll("[data-unit]").forEach(p => {
-      p.classList.toggle("active", (p as HTMLElement).dataset.unit === targetSizeUnit);
-    });
+    updateUnitPillStyles(targetSizeUnit);
   }
 
   // 4. Resize Mode
@@ -1471,7 +1834,7 @@ function markPresetCustom() {
   if (activePresetId !== null) {
     activePresetId = null;
     try {
-      localStorage.removeItem("shrinkr_active_preset");
+      localStorage.removeItem(ACTIVE_PRESET_STORAGE_KEY);
     } catch (_) {}
     if (presetSelect) presetSelect.value = "custom";
     updateDeleteButtonVisibility();
@@ -1510,16 +1873,18 @@ function setupEvents() {
 
   // Language Switch
   langEnBtn?.addEventListener("click", () => {
-    appSettings.lang = "en";
-    saveAppSettings();
-    savePreferences();
-    updateLanguage("en");
+    setAppLanguage("en");
   });
   langFrBtn?.addEventListener("click", () => {
-    appSettings.lang = "fr";
-    saveAppSettings();
-    savePreferences();
-    updateLanguage("fr");
+    setAppLanguage("fr");
+  });
+  document.querySelectorAll<HTMLElement>("[data-lang]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetLang = btn.dataset.lang as Language;
+      if (targetLang === "en" || targetLang === "fr") {
+        setAppLanguage(targetLang);
+      }
+    });
   });
 
   // Accordion Expand/Collapse
@@ -1537,10 +1902,9 @@ function setupEvents() {
   formatPills.querySelectorAll("[data-format]").forEach(pill => {
     pill.addEventListener("click", (e) => {
       markPresetCustom();
-      formatPills.querySelectorAll("[data-format]").forEach(p => p.classList.remove("active"));
       const target = e.currentTarget as HTMLElement;
-      target.classList.add("active");
       selectedFormat = target.dataset.format || "jpg";
+      updateFormatPillStyles(selectedFormat);
       updateSummaryBadges();
       renderFileList();
       savePreferences();
@@ -1581,10 +1945,9 @@ function setupEvents() {
   unitPills.querySelectorAll("[data-unit]").forEach(pill => {
     pill.addEventListener("click", (e) => {
       markPresetCustom();
-      unitPills.querySelectorAll("[data-unit]").forEach(p => p.classList.remove("active"));
       const target = e.currentTarget as HTMLElement;
-      target.classList.add("active");
       targetSizeUnit = (target.dataset.unit as "kb" | "mb") || "kb";
+      updateUnitPillStyles(targetSizeUnit);
       updateSummaryBadges();
       savePreferences();
     });
@@ -1731,6 +2094,15 @@ function setupEvents() {
       const s = parseInt(target.dataset.scale || "75");
       scaleVal = s;
       inputScalePercent.value = s.toString();
+      scalePresets.querySelectorAll("[data-scale]").forEach(p => {
+        const isMatch = (p as HTMLElement).dataset.scale === s.toString();
+        p.classList.toggle("border-orange-500/40", isMatch);
+        p.classList.toggle("text-orange-300", isMatch);
+        p.classList.toggle("bg-white/[0.08]", isMatch);
+        p.classList.toggle("text-zinc-300", !isMatch);
+        p.classList.toggle("bg-white/[0.04]", !isMatch);
+        p.classList.toggle("border-white/[0.06]", !isMatch);
+      });
       updateSummaryBadges();
       savePreferences();
     });
@@ -1809,6 +2181,7 @@ function setupEvents() {
 
     userPresets.unshift(newPreset);
     try {
+      localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(userPresets));
       localStorage.setItem("shrinkr_presets", JSON.stringify(userPresets));
     } catch (e) {
       console.warn("Failed to save user presets:", e);
@@ -1816,6 +2189,7 @@ function setupEvents() {
 
     activePresetId = newPreset.id;
     try {
+      localStorage.setItem(ACTIVE_PRESET_STORAGE_KEY, newPreset.id);
       localStorage.setItem("shrinkr_active_preset", newPreset.id);
     } catch (_) {}
     closeModal();
@@ -1879,6 +2253,22 @@ function setupEvents() {
     saveAppSettings();
   });
 
+  // GitHub link in settings modal
+  const linkGithub = document.getElementById("link-github");
+  linkGithub?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    try {
+      await openUrl(GITHUB_REPO_URL);
+    } catch (err) {
+      console.error("Failed to open URL via plugin-opener:", err);
+      window.open(GITHUB_REPO_URL, "_blank");
+    }
+  });
+
+  // Updater actions
+  btnCheckUpdates?.addEventListener("click", handleCheckUpdates);
+  btnInstallUpdate?.addEventListener("click", handleInstallUpdate);
+
   // Global keydown for Escape
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
@@ -1927,7 +2317,7 @@ function setupEvents() {
 
   // Filename Suffix & Overwrite
   inputSuffixText.addEventListener("input", () => {
-    fileSuffixVal = inputSuffixText.value.trim() || "_shrinkr";
+    fileSuffixVal = inputSuffixText.value.trim() || appSettings.defaultSuffix || "_min";
     savePreferences();
   });
 
@@ -1974,17 +2364,17 @@ function setupEvents() {
   [dropZoneHero, dropZoneCompact].forEach(zone => {
     zone.addEventListener("dragover", (e) => {
       e.preventDefault();
-      zone.classList.add("border-blue-500", "bg-blue-500/10");
+      zone.classList.add("drag-over");
     });
 
     zone.addEventListener("dragleave", (e) => {
       e.preventDefault();
-      zone.classList.remove("border-blue-500", "bg-blue-500/10");
+      zone.classList.remove("drag-over");
     });
 
     zone.addEventListener("drop", (e) => {
       e.preventDefault();
-      zone.classList.remove("border-blue-500", "bg-blue-500/10");
+      zone.classList.remove("drag-over");
       if (e.dataTransfer && e.dataTransfer.files.length > 0) {
         const paths: string[] = [];
         for (let i = 0; i < e.dataTransfer.files.length; i++) {
@@ -2070,7 +2460,7 @@ function setupEvents() {
   });
 
   // Listen for Tauri IPC Progress Events
-  listen<ProgressEventPayload>("shrinkr://batch-progress", (event) => {
+  listen<ProgressEventPayload>("krushr://batch-progress", (event) => {
     const payload = event.payload;
     const item = filesQueue.find(f => f.path === payload.path);
     if (item) {
@@ -2086,7 +2476,7 @@ function setupEvents() {
   });
 
   // Listen for Tauri IPC Complete Event
-  listen<BatchCompletePayload>("shrinkr://batch-complete", (event) => {
+  listen<BatchCompletePayload>("krushr://batch-complete", (event) => {
     isProcessing = false;
     labelStartBtn.textContent = t("startCompression");
     btnStart.disabled = filesQueue.length === 0;
@@ -2108,15 +2498,15 @@ function setupEvents() {
 }
 
 // Initial Boot
+currentLang = getSavedLanguage();
 appSettings = loadAppSettings();
-currentLang = appSettings.lang;
+appSettings.lang = currentLang;
 applyTheme(appSettings.theme);
 setupIcons();
 loadPresets();
 loadPreferences();
-if (appSettings.lang) {
-  currentLang = appSettings.lang;
-}
+currentLang = getSavedLanguage();
+appSettings.lang = currentLang;
 setupEvents();
 updateLanguage(currentLang);
 updateSettingsUI();

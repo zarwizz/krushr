@@ -14,7 +14,7 @@
   }
 
   body {
-    @apply bg-[#0c0d10] text-[#f5f5f7] font-sans antialiased overflow-hidden selection:bg-blue-500 selection:text-white;
+    @apply bg-[#0c0d10] text-[#f5f5f7] font-sans antialiased overflow-hidden selection:bg-orange-500 selection:text-white;
   }
 
   /* Custom Windows 11 dark scrollbar */
@@ -74,11 +74,11 @@
 }
 
 .win-caption-btn-close:active {
-  background-color: #be123c !important;
+  background-color: #e11d48 !important;
 }
 
 .brand-logo-glow {
-  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.4)) drop-shadow(0 0 12px rgba(59, 130, 246, 0.3));
+  filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.45)) drop-shadow(0 0 16px rgba(225, 29, 72, 0.3));
 }
 
 /* Glass card styling */
@@ -150,35 +150,41 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.15);
 }
 
-/* Switch toggle */
+/* Switch toggle (w-11 h-6 with w-5 h-5 thumb, 2px padding, translate-x-5) */
 .apple-toggle {
   position: relative;
-  width: 36px;
-  height: 20px;
+  width: 44px;
+  height: 24px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.18);
-  transition: background-color 0.2s ease;
+  background: rgba(255, 255, 255, 0.14);
+  padding: 2px;
+  transition: background-color 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .apple-toggle.active {
-  background: #0078d4;
+  background: linear-gradient(to right, #f97316, #e11d48) !important;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35) !important;
+  border-color: transparent !important;
 }
 
 .apple-toggle-dot {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateX(0);
+  flex-shrink: 0;
 }
 
 .apple-toggle.active .apple-toggle-dot {
-  transform: translateX(16px);
+  transform: translateX(20px);
 }
 
 /* Accordion component styles */
@@ -207,9 +213,74 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .ratio-lock-btn.active {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(249, 115, 22, 0.15);
+  color: #fb923c;
+  border-color: rgba(249, 115, 22, 0.35);
+}
+
+/* Format Pills Segmented Buttons */
+#format-pills .pill-item.active {
+  background: linear-gradient(135deg, #f97316 0%, #f43f5e 50%, #e11d48 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border: 1px solid rgba(251, 146, 60, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(67, 20, 7, 0.4) !important;
+}
+
+#format-pills .pill-item:not(.active) {
+  background: rgba(15, 23, 42, 0.6) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+#format-pills .pill-item:not(.active):hover {
+  color: #f1f5f9 !important;
+}
+
+/* Dropzone Stability & Geometric Centering (Zero displacement on hover) */
+#drop-zone-hero {
+  border-width: 2px !important;
+  border-style: dashed !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+#drop-zone-hero:hover {
+  border-color: rgba(251, 146, 60, 0.45) !important;
+  background-color: rgba(251, 146, 60, 0.03) !important;
+}
+
+#drop-zone-hero.drag-over {
+  border-color: #fb923c !important;
+  background-color: rgba(251, 146, 60, 0.08) !important;
+  box-shadow: 0 0 24px rgba(251, 146, 60, 0.18) !important;
+}
+
+#drop-icon {
+  will-change: transform;
+}
+
+#drop-zone-hero:hover #drop-icon {
+  transform: scale(1.04);
+}
+
+/* Language Segmented Buttons in Settings Modal */
+#lang-pills .pill-item.active {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+#lang-pills .pill-item:not(.active) {
+  color: #94a3b8;
+  border: 1px solid transparent;
+}
+
+#lang-pills .pill-item:not(.active):hover {
+  color: #f1f5f9;
 }
 
 .ratio-lock-btn:not(.active) {

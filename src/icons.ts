@@ -1,17 +1,9 @@
 export const icons = {
-  logo: `<svg class="w-5 h-5 text-cyan-400 brand-logo-glow" style="filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.4)) drop-shadow(0 0 12px rgba(59, 130, 246, 0.3));" viewBox="0 0 24 24" fill="none">
-    <defs>
-      <linearGradient id="shrinkrLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#22D3EE"/>
-        <stop offset="50%" stop-color="#38BDF8"/>
-        <stop offset="100%" stop-color="#3B82F6"/>
-      </linearGradient>
-    </defs>
-    <path d="M7.5 10H10V7.5" stroke="url(#shrinkrLogoGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M4 4L9.5 9.5" stroke="url(#shrinkrLogoGrad)" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M16.5 14H14V16.5" stroke="url(#shrinkrLogoGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M20 20L14.5 14.5" stroke="url(#shrinkrLogoGrad)" stroke-width="2.2" stroke-linecap="round"/>
-    <circle cx="12" cy="12" r="1.75" fill="#22D3EE"/>
+  logo: `<svg class="w-5 h-5 drop-shadow-[0_0_8px_rgba(251,146,60,0.35)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Montant vertical gauche : largeur 11px, X=24 à 35, Y=18 à 82, rx=5.5 -->
+    <rect x="24" y="18" width="11" height="64" rx="5.5" fill="url(#krushr-gradient)" />
+    <!-- Chevron droit : épaisseur 11px, flush Y=18 à 82, pointe centrale à X=43 (gap 8px), rx=5.5 -->
+    <path d="M72.5 23.5L48.5 50L72.5 76.5" fill="none" stroke="url(#krushr-gradient)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" />
   </svg>`,
 
   gear: `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -26,7 +18,7 @@ export const icons = {
     <path d="M3 21l7-7"></path>
   </svg>`,
   
-  dropZone: `<svg class="w-12 h-12 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  dropZone: `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="url(#krushr-gradient)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <rect x="3" y="3" width="18" height="18" rx="4" stroke-dasharray="3 3"></rect>
     <path d="M8 12l4-4 4 4"></path>
     <path d="M12 8v8"></path>
@@ -58,7 +50,7 @@ export const icons = {
     <line x1="9" y1="9" x2="15" y2="15"></line>
   </svg>`,
 
-  spinner: `<svg class="w-4 h-4 animate-spin text-blue-400" viewBox="0 0 24 24" fill="none">
+  spinner: `<svg class="w-4 h-4 animate-spin text-orange-400" viewBox="0 0 24 24" fill="none">
     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
   </svg>`,
@@ -133,4 +125,18 @@ export const icons = {
   winClose: `<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1">
     <path d="M1 1L9 9M9 1L1 9" stroke-linecap="round" />
   </svg>`,
+
+  refresh: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+    <path d="M3 3v5h5"/>
+    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+    <path d="M16 21h5v-5"/>
+  </svg>`,
+
+  download: `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/>
+    <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>`,
 };
+

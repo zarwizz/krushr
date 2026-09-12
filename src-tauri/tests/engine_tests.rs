@@ -1,8 +1,8 @@
 use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
-use shrinkr_lib::engine::decoder::decode_image_file;
-use shrinkr_lib::engine::encoder::{encode_image, OutputFormat};
-use shrinkr_lib::engine::optimizer::optimize_to_target_size;
-use shrinkr_lib::engine::transform::{
+use krushr_lib::engine::decoder::decode_image_file;
+use krushr_lib::engine::encoder::{encode_image, OutputFormat};
+use krushr_lib::engine::optimizer::optimize_to_target_size;
+use krushr_lib::engine::transform::{
     calculate_target_dimensions, flatten_alpha_to_white, resize_image, ResizeConfig,
 };
 
@@ -143,7 +143,7 @@ fn test_svg_rendering() {
     </svg>"##;
 
     let temp_dir = std::env::temp_dir();
-    let svg_path = temp_dir.join("test_shrinkr.svg");
+    let svg_path = temp_dir.join("test_krushr.svg");
     std::fs::write(&svg_path, svg_data).unwrap();
 
     let decoded = decode_image_file(&svg_path).expect("SVG decoding failed");
@@ -156,7 +156,7 @@ fn test_svg_rendering() {
 
 #[test]
 fn test_powertoys_resize_modes() {
-    use shrinkr_lib::engine::transform::{apply_resize, FitMode};
+    use krushr_lib::engine::transform::{apply_resize, FitMode};
 
     // 800x600 image (4:3)
     let img = DynamicImage::new_rgb8(800, 600);

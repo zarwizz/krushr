@@ -1,42 +1,34 @@
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="1024" height="1024" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1E293B"/>
-      <stop offset="50%" stop-color="#0F172A"/>
-      <stop offset="100%" stop-color="#020617"/>
-    </linearGradient>
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38BDF8"/>
-      <stop offset="50%" stop-color="#3B82F6"/>
-      <stop offset="100%" stop-color="#6366F1"/>
+    <linearGradient id="krushr-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FB923C"/>
+      <stop offset="100%" stop-color="#E11D48"/>
     </linearGradient>
     <linearGradient id="strokeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.04"/>
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="32" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    <!-- Discreet and contained glow to preserve athletic sharpness without visual thickening -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
   </defs>
 
-  <!-- Apple Squircle Background -->
-  <rect x="32" y="32" width="960" height="960" rx="224" fill="url(#bgGrad)" stroke="url(#strokeGrad)" stroke-width="8"/>
+  <!-- Squircle Background with 5% safety margin -->
+  <rect x="5" y="5" width="90" height="90" rx="22" fill="#0b0f19" stroke="url(#strokeGrad)" stroke-width="0.8"/>
 
   <!-- Subtle Inner Glow Ring -->
-  <rect x="48" y="48" width="928" height="928" rx="212" fill="none" stroke="url(#accentGrad)" stroke-width="3" stroke-opacity="0.25"/>
+  <rect x="6.5" y="6.5" width="87" height="87" rx="20.5" fill="none" stroke="url(#krushr-gradient)" stroke-width="0.3" stroke-opacity="0.25"/>
 
-  <!-- Centered Stylized "Shrink" Icon (Two Inward Arrows / Minimalist Frame) -->
+  <!-- Athletic, Refined Geometric Vise Press "K" (11px Thin, 8px Gap, Flush Y=18-82) -->
   <g filter="url(#glow)">
-    <!-- Top-left to Center Arrow -->
-    <path d="M336 440H440V336" stroke="url(#accentGrad)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M280 280L430 430" stroke="url(#accentGrad)" stroke-width="48" stroke-linecap="round"/>
-
-    <!-- Bottom-right to Center Arrow -->
-    <path d="M688 584H584V688" stroke="url(#accentGrad)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M744 744L594 594" stroke="url(#accentGrad)" stroke-width="48" stroke-linecap="round"/>
-
-    <!-- Center Target Node -->
-    <circle cx="512" cy="512" r="28" fill="#38BDF8"/>
+    <!-- Montant vertical gauche : largeur 11px, X=24 à 35, Y=18 à 82, rx=5.5 -->
+    <rect x="24" y="18" width="11" height="64" rx="5.5" fill="url(#krushr-gradient)"/>
+    <!-- Chevron droit : épaisseur 11px, flush Y=18 à 82, pointe centrale à X=43 (gap 8px), rx=5.5 -->
+    <path d="M72.5 23.5L48.5 50L72.5 76.5" fill="none" stroke="url(#krushr-gradient)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>

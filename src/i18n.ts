@@ -57,6 +57,9 @@ export interface Translations {
   // Queue & Actions
   fileQueue: string;
   filesSelected: string;
+  noFilesInQueue: string;
+  fileReadySingle: string;
+  fileReadyPlural: string;
   clearQueue: string;
   startCompression: string;
   compressing: string;
@@ -136,11 +139,21 @@ export interface Translations {
   settingsAboutTitle: string;
   settingsAboutDesc: string;
   settingsCloseBtn: string;
+
+  // Updates
+  settingsUpdatesTitle: string;
+  settingsCheckUpdatesBtn: string;
+  settingsCheckingUpdates: string;
+  settingsUpdateLatest: string;
+  settingsUpdateAvailable: string;
+  settingsUpdateInstallRestartBtn: string;
+  settingsUpdateDownloading: string;
+  settingsUpdateError: string;
 }
 
 export const translations: Record<Language, Translations> = {
   en: {
-    appTitle: "shrinkr",
+    appTitle: "Krushr",
     appSubtitle: "Ultra-fast batch image optimizer & converter",
     dropTitle: "Drop images or folders here",
     dropSubtitle: "Supports JPG, PNG, WEBP, AVIF, HEIC, SVG, BMP, TIFF, GIF, ICO",
@@ -191,6 +204,9 @@ export const translations: Record<Language, Translations> = {
 
     fileQueue: "Queue & Results",
     filesSelected: "files ready",
+    noFilesInQueue: "No files in queue",
+    fileReadySingle: "file ready",
+    fileReadyPlural: "files ready",
     clearQueue: "Clear Queue",
     startCompression: "Compress Images",
     compressing: "Compressing...",
@@ -266,19 +282,29 @@ export const translations: Record<Language, Translations> = {
     settingsFilesTitle: "Files",
     settingsDefaultSuffixDesc: "Default suffix",
     settingsAboutTitle: "About",
-    settingsAboutDesc: "shrinkr v1.0 • Local and private engine",
+    settingsAboutDesc: "Krushr v1.0 • Local and private engine",
     settingsCloseBtn: "Close",
+
+    // Updates
+    settingsUpdatesTitle: "Updates",
+    settingsCheckUpdatesBtn: "Check for updates",
+    settingsCheckingUpdates: "Checking for updates...",
+    settingsUpdateLatest: "You are using the latest version (v{version})",
+    settingsUpdateAvailable: "Version v{version} available",
+    settingsUpdateInstallRestartBtn: "Download and restart",
+    settingsUpdateDownloading: "Downloading update...",
+    settingsUpdateError: "Unable to check for updates right now",
   },
   fr: {
-    appTitle: "shrinkr",
+    appTitle: "Krushr",
     appSubtitle: "Optimiseur et convertisseur d'images par lots ultra-rapide",
     dropTitle: "Glissez vos images ou dossiers ici",
     dropSubtitle: "Formats pris en charge : JPG, PNG, WEBP, AVIF, HEIC, SVG, BMP, TIFF, GIF, ICO",
     dropCompactHint: "Déposez d'autres images ou dossiers ici",
     browseFiles: "Parcourir les fichiers",
     browseFolder: "Ajouter un dossier",
-    addFilesCompact: "+ Fichiers",
-    addFolderCompact: "+ Dossier",
+    addFilesCompact: "+ fichiers",
+    addFolderCompact: "+ dossier",
 
     sectionFormat: "Format et compression",
     sectionResize: "Moteur de redimensionnement",
@@ -295,12 +321,12 @@ export const translations: Record<Language, Translations> = {
     resizeMode: "Mode",
     resizeOriginal: "Original",
     resizeCustom: "Personnalisé",
-    resizeScale: "% Échelle",
+    resizeScale: "% échelle",
     widthLabel: "Largeur",
     heightLabel: "Hauteur",
     fitModeLabel: "Cadrage",
-    fitContain: "Ajuster (Fit)",
-    fitFill: "Remplir (Fill)",
+    fitContain: "Ajuster (fit)",
+    fitFill: "Remplir (fill)",
     fitStretch: "Étirer",
     noUpscale: "Ne pas agrandir si plus petite",
     aspectRatioLock: "Proportions verrouillées",
@@ -321,6 +347,9 @@ export const translations: Record<Language, Translations> = {
 
     fileQueue: "File d'attente et résultats",
     filesSelected: "fichiers prêts",
+    noFilesInQueue: "Aucun fichier en attente",
+    fileReadySingle: "fichier prêt",
+    fileReadyPlural: "fichiers prêts",
     clearQueue: "Vider la file d'attente",
     startCompression: "Compresser les images",
     compressing: "Compression en cours...",
@@ -364,15 +393,15 @@ export const translations: Record<Language, Translations> = {
     presetSpecsLightweightNative: "WEBP • taille source • 80%",
     presetTitleHighFidelityArchive: "Archivage haute fidélité",
     presetSpecsHighFidelityArchive: "AVIF • taille source • 85%",
-    presetChipNew: "+ Nouveau",
+    presetChipNew: "+ nouveau",
     presetChipDeleteTitle: "Supprimer ce préréglage",
     presetChipAddTitle: "Enregistrer la configuration actuelle en préréglage",
-    presetSaveBtn: "+ Nouveau",
+    presetSaveBtn: "+ nouveau",
     presetDeleteBtn: "Supprimer le préréglage",
     presetCustomOption: "Personnalisé (modifié)",
     presetModalTitle: "Enregistrer le préréglage",
     presetModalDesc: "Enregistrer la configuration actuelle comme préréglage réutilisable.",
-    presetModalPlaceholder: "ex : Bannière client",
+    presetModalPlaceholder: "ex. : bannière client",
     presetModalPreview: "Aperçu :",
     presetModalCancel: "Annuler",
     presetModalSave: "Enregistrer",
@@ -396,7 +425,17 @@ export const translations: Record<Language, Translations> = {
     settingsFilesTitle: "Fichiers",
     settingsDefaultSuffixDesc: "Suffixe par défaut",
     settingsAboutTitle: "À propos",
-    settingsAboutDesc: "shrinkr v1.0 • Moteur local et privé",
+    settingsAboutDesc: "Krushr v1.0 • Moteur local et privé",
     settingsCloseBtn: "Fermer",
+
+    // Updates
+    settingsUpdatesTitle: "Mises à jour",
+    settingsCheckUpdatesBtn: "Rechercher des mises à jour",
+    settingsCheckingUpdates: "Recherche en cours...",
+    settingsUpdateLatest: "Vous utilisez la version la plus récente (v{version})",
+    settingsUpdateAvailable: "Version v{version} disponible",
+    settingsUpdateInstallRestartBtn: "Télécharger et redémarrer",
+    settingsUpdateDownloading: "Téléchargement en cours...",
+    settingsUpdateError: "Impossible de vérifier les mises à jour pour le moment",
   }
 };

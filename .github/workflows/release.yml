@@ -43,7 +43,7 @@ steps:
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
     with:
       tagName: __VERSION__
-      releaseName: 'shrinkr v__VERSION__'
+      releaseName: 'krushr v__VERSION__'
       releaseBody: 'See the assets below to download the latest release.'
       releaseDraft: false
       prerelease: false

@@ -1,17 +1,17 @@
 [package]
-name = "shrinkr"
-version = "0.1.0"
+name = "krushr"
+version = "1.0.0"
 description = "A lightweight, blazingly fast modern batch image converter & optimizer"
-authors = ["shrinkr team"]
+authors = ["krushr team"]
 edition = "2021"
-default-run = "shrinkr"
+default-run = "krushr"
 
 [lib]
-name = "shrinkr_lib"
+name = "krushr_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
-name = "shrinkr"
+name = "krushr"
 path = "src/main.rs"
 
 [build-dependencies]
@@ -19,13 +19,16 @@ tauri-build = { version = "2.1", features = [] }
 
 [dependencies]
 tauri = { version = "2.1", features = [] }
+tauri-plugin-updater = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
+tauri-plugin-process = "2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rayon = "1.10"
 walkdir = "2.5"
 tokio = { version = "1", features = ["full"] }
+base64 = "0.22"
 
 # Image processing dependencies
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp", "tiff", "ico", "gif"] }

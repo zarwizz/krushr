@@ -56,7 +56,7 @@ pub fn run_batch(app: AppHandle, config: BatchConfig) {
             // Notify UI: processing started
             let current_idx = processed_counter.fetch_add(1, Ordering::Relaxed);
             let _ = app.emit(
-                "shrinkr://batch-progress",
+                "krushr://batch-progress",
                 ProgressPayload {
                     index: current_idx + 1,
                     total,
@@ -94,7 +94,7 @@ pub fn run_batch(app: AppHandle, config: BatchConfig) {
                     }
 
                     let _ = app.emit(
-                        "shrinkr://batch-progress",
+                        "krushr://batch-progress",
                         ProgressPayload {
                             index: current_idx + 1,
                             total,
@@ -114,7 +114,7 @@ pub fn run_batch(app: AppHandle, config: BatchConfig) {
                     error_count.fetch_add(1, Ordering::Relaxed);
 
                     let _ = app.emit(
-                        "shrinkr://batch-progress",
+                        "krushr://batch-progress",
                         ProgressPayload {
                             index: current_idx + 1,
                             total,
@@ -138,7 +138,7 @@ pub fn run_batch(app: AppHandle, config: BatchConfig) {
         let final_last_path = last_output_path.lock().ok().and_then(|guard| guard.clone());
 
         let _ = app.emit(
-            "shrinkr://batch-complete",
+            "krushr://batch-complete",
             BatchCompletePayload {
                 total_files: total,
                 success_count: success_count.load(Ordering::Relaxed),
@@ -200,7 +200,7 @@ fn process_single_image(
         .unwrap_or("image");
 
     let ext = format.extension();
-    let suffix = custom_suffix.unwrap_or("_shrinkr");
+    let suffix = custom_suffix.unwrap_or("_krushr");
 
     let output_file_path = if overwrite_source {
         // Direct overwrite requested by user
@@ -256,7 +256,7 @@ mod tests {
             return;
         }
 
-        let temp_dir = std::env::temp_dir().join("shrinkr_batch_test");
+        let temp_dir = std::env::temp_dir().join("krushr_batch_test");
         let _ = fs::create_dir_all(&temp_dir);
 
         let res = process_single_image(

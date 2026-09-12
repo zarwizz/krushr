@@ -173,7 +173,7 @@ mod tests {
         assert_eq!(decoded.original_height, 3088);
 
         // Verify conversion to JPEG with alpha flattening
-        let out_jpg = std::env::temp_dir().join("shrinkr_heic_decode_test.jpg");
+        let out_jpg = std::env::temp_dir().join("krushr_heic_decode_test.jpg");
         let rgb_img = crate::engine::transform::flatten_alpha_to_white(&decoded.image);
         rgb_img
             .save_with_format(&out_jpg, image::ImageFormat::Jpeg)

@@ -11,6 +11,8 @@ pub struct ScannedImage {
     pub height: Option<u32>,
     pub format: String,
     pub status: String,
+    #[serde(default)]
+    pub thumbnail: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
